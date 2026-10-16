@@ -81,3 +81,5 @@
 - v0.22.0: Julee & Lily are Ghibli watercolours made in Google Flow (his account, PRO, Nano Banana 2.1; project 'Oct 17 - 00:27'). src/ui/img/{julee,lily}.jpg = crops with paper levelled to pure white; .dog uses mix-blend-mode multiply over .pups paper background. Motion: breathe, soft-masked head copy that nods, blink lids (percent positions per dog), drifting petals, page float while loading. Flow video (Frames) not done: couldn't set a start frame by automation.
 - Gotcha: the Claude app's built-in browser can't attach local files (no file_upload); Claude in Chrome has file_upload. For upload tasks, connect the Chrome extension. Localhost fetch from the pane also fails.
 
+- v0.23.0: big preview never blank (small preview shown at once; old blob URL had been revoked when settings changed). Update: download first with a moving bar (showUpdate in app.js), THEN Android's 'allow from this source'; finished download kept as cache/update/inkwell-<ver>.apk (.part while downloading); deleted on start only when up to date.
+

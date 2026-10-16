@@ -214,7 +214,11 @@ async function view(n) {
   $('v-skip').textContent = skipped.has(shown) ? 'Print this page' : 'Skip this page';
   const img = /** @type {HTMLImageElement} */ ($('viewer-img'));
   let url = made.big.get(shown);
-  if (!url) made.big.set(shown, (url = await toImageUrl(shrinkToHeight(await pixels(pages[shown]), 1600))));
+  // Never a blank screen: show the small preview at once (the old picture may be from another file),
+  // then swap in the sharp one when it's ready.
+  img.src = url ?? /** @type {HTMLImageElement | undefined} */ (document.querySelectorAll('#previews img.preview')[shown])?.src ?? '';
+  if (url) return;
+  made.big.set(shown, (url = URL.createObjectURL(await toImage(shrinkToHeight(await pixels(pages[shown]), 1600), 'image/jpeg'))));
   if (shown === viewing) img.src = url; // else the person already moved on (the picture stays remembered)
 }
 
@@ -496,28 +500,44 @@ async function numbered(n) {
  */
 async function checkUpdate() {
   if (!canPrintDirect()) return; // the website updates by itself
-  cleanupUpdate();
   try {
     const rel = await (await fetch('https://api.github.com/repos/Arindam2000/inkwell/releases/latest')).json();
     const latest = /v(\d+\.\d+\.\d+)/.exec(rel.name ?? '')?.[1];
-    if (!latest || !newer(latest, __APP_VERSION__)) return;
-    const b = /** @type {HTMLButtonElement} */ ($('update'));
-    const ready = `Update to v${latest}`;
-    b.textContent = ready;
-    b.hidden = false;
-    b.addEventListener('click', async () => {
-      b.disabled = true;
-      try {
-        const res = await installUpdate((pct) => { b.textContent = pct < 0 ? 'Downloading…' : `Downloading… ${pct}%`; });
-        b.textContent = ready;
-        if (res.needsPermission) note('Turn on "Allow from this source" for Inkwell, come back, then tap Update again.');
-      } catch {
-        b.textContent = ready;
-        note("Couldn't download the update. Check the Wi-Fi and tap Update again.");
-      }
-      b.disabled = false;
-    });
+    if (!latest || !newer(latest, __APP_VERSION__)) { cleanupUpdate(); return; } // up to date: the old download can go
+    showUpdate(/** @type {HTMLButtonElement} */ ($('update')), latest, (p) => installUpdate(latest, p));
   } catch { /* offline: try next time */ }
+}
+
+/**
+ * The Update button: the bar starts moving the moment it's tapped, fills with the download, then Android's
+ * installer opens. If Android first wants "Allow from this source", the download is kept, so the next tap
+ * goes straight to installing. @param {HTMLButtonElement} b @param {string} latest
+ * @param {(onProgress: (pct: number) => void) => Promise<{needsPermission?: boolean}>} install
+ */
+export function showUpdate(b, latest, install) {
+  const ready = `Update to v${latest}`;
+  b.textContent = ready;
+  b.hidden = false;
+  b.addEventListener('click', async () => {
+    if (b.classList.contains('loading')) return;
+    b.classList.add('loading');
+    b.style.setProperty('--pct', '0%');
+    b.textContent = 'Downloading…';
+    try {
+      const res = await install((pct) => {
+        if (pct < 0) return;
+        b.style.setProperty('--pct', `${pct}%`);
+        b.textContent = `Downloading… ${pct}%`;
+      });
+      b.textContent = res.needsPermission ? `Allow, then tap again: v${latest}` : 'Installing…';
+      if (res.needsPermission) note('Android asks once: turn on "Allow from this source" for Inkwell, come back, and tap Update again. The download is kept.');
+      else setTimeout(() => { b.textContent = ready; }, 4000); // if the installer was closed, the button works again
+    } catch {
+      b.textContent = ready;
+      note("Couldn't download the update. Check the Wi-Fi and tap Update again.");
+    }
+    b.classList.remove('loading');
+  });
 }
 
 /** @param {string} a @param {string} b */

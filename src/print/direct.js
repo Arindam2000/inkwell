@@ -119,10 +119,10 @@ export async function printDirect(pages, dpi, name, onProgress = () => {}, quali
 const Update = registerPlugin('Update');
 const APK = 'https://github.com/Arindam2000/inkwell/releases/latest/download/inkwell.apk';
 
-/** @param {(pct: number) => void} onProgress -1 when the size is unknown @returns {Promise<{needsPermission?: boolean}>} */
-export async function installUpdate(onProgress) {
+/** @param {string} version @param {(pct: number) => void} onProgress -1 when the size is unknown @returns {Promise<{needsPermission?: boolean}>} */
+export async function installUpdate(version, onProgress) {
   const listener = await Update.addListener('progress', (/** @type {{pct: number}} */ e) => onProgress(e.pct));
-  try { return await Update.install({ url: APK }); } finally { listener.remove(); }
+  try { return await Update.install({ url: APK, version }); } finally { listener.remove(); }
 }
 
 /** Delete a downloaded update (it's installed by now, or was cancelled). */

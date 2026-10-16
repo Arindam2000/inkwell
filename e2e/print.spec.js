@@ -226,3 +226,39 @@ test('memory: saving again reuses the pictures; going back to an earlier setting
   await expect(page.locator('#app')).not.toHaveClass(/busy/);
   expect(Date.now() - t).toBeLessThan(1500);
 });
+
+test('big preview is never blank: it shows the small picture at once, even after a setting changed', async ({ page }) => {
+  await open2(page);
+  await page.locator('button.open').first().click();
+  await page.getByRole('button', { name: 'Close' }).click();
+  await page.getByRole('button', { name: 'Darker' }).click();
+  await expect(page.locator('#summary')).toHaveText('2 pages · 2 sheets', { timeout: 15000 });
+  await page.locator('button.open').first().click();
+  const shown = await page.locator('#viewer-img').evaluate(async (img) => {
+    await new Promise((r) => setTimeout(r, 60));
+    return img.complete && img.naturalWidth > 0;
+  });
+  expect(shown).toBe(true);
+});
+
+test('Update button: moving bar and "Downloading…" the moment it is tapped, then the percent fills in', async ({ page }) => {
+  await page.goto('./');
+  const steps = await page.evaluate(async () => {
+    const { showUpdate } = await import('/inkwell/src/ui/app.js');
+    const b = document.getElementById('update');
+    /** @type {(pct: number) => void} */ let report = () => {};
+    let finish = () => {};
+    showUpdate(b, '9.9.9', (onProgress) => { report = onProgress; return new Promise((r) => { finish = () => r({}); }); });
+    const seen = [b.textContent];
+    b.click();
+    seen.push(`${b.textContent}|${b.classList.contains('loading')}`);
+    report(40);
+    seen.push(`${b.textContent}|${b.style.getPropertyValue('--pct')}`);
+    b.click(); // an impatient second tap does nothing
+    finish();
+    await new Promise((r) => setTimeout(r, 0));
+    seen.push(b.textContent);
+    return seen;
+  });
+  expect(steps).toEqual(['Update to v9.9.9', 'Downloading…|true', 'Downloading… 40%|40%', 'Installing…']);
+});
