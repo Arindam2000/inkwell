@@ -15,6 +15,24 @@ const HOST_KEY = 'inkwell-printer';
 
 export const canPrintDirect = () => Capacitor.isNativePlatform();
 
+/** Android app only: a file shared to Inkwell (android/.../SharedPlugin.java). @type {any} */
+const Shared = registerPlugin('Shared');
+
+/**
+ * Hand each file shared to the Android app to `open`: the one it was opened with, and any shared while it runs.
+ * @param {(file: Blob) => unknown} open @returns {Promise<boolean>} true if it was opened with a file
+ */
+export async function onSharedFile(open) {
+  const take = async () => {
+    const f = await Shared.take();
+    if (!f.data) return false;
+    open(new Blob([Uint8Array.from(atob(f.data), (c) => c.charCodeAt(0))], { type: f.type || '' }));
+    return true;
+  };
+  Shared.addListener('shared', take);
+  return take();
+}
+
 /** @param {Uint8Array} bytes */
 const toB64 = (bytes) => {
   let s = '';

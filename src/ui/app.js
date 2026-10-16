@@ -3,7 +3,7 @@ import { assemblePdf } from '../pdf/writePdf.js';
 import { DPI } from '../pipeline/pipeline.js';
 import { run } from '../pipeline/run.js';
 import { batches, bookOrder, packPages, unpackPages } from '../print/book.js';
-import { canPrintDirect, printDirect } from '../print/direct.js';
+import { canPrintDirect, onSharedFile, printDirect } from '../print/direct.js';
 
 /** @typedef {import('../image/types.js').Gray} Gray */
 /** @typedef {import('../pipeline/run.js').Page} Page */
@@ -247,7 +247,7 @@ export function start() {
   $('fix-order').addEventListener('click', () => redo('reverse'));
   $('fix-mixed').addEventListener('click', () => redo(null));
 
-  openShared().then(async (opened) => {
+  (canPrintDirect() ? onSharedFile(prepare) : openShared()).then(async (opened) => {
     const at = opened ? false : await savedBook();
     if (at) showBook(at);
   });
