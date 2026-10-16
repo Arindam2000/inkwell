@@ -55,3 +55,8 @@
 - Booklet backs now turned 180 (folded across the width = short-edge flip; book print turns on the long edge). Not yet checked on paper.
 - Update button: Android app reads the release title 'Inkwell vX.Y.Z' from the GitHub API and links to the APK (Android asks once to install).
 
+
+## Update 2026-10-16 (v0.14.0)
+- Setting changes are fast: the worker stays alive and keeps each page after clean-up (compressed); same file + same clean-up mode replays from memory (src/pipeline/run.js 'held', worker.js 'again'). Screen stays on Ready, dimmed (.busy); taps while busy = only the latest runs.
+- In-app update: UpdatePlugin.java downloads the APK to cache/update, opens the installer (REQUEST_INSTALL_PACKAGES; first time Android asks to allow Inkwell). Cache is wiped on every start. Not yet tested on a phone.
+

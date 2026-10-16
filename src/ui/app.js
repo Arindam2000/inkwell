@@ -3,7 +3,7 @@ import { assemblePdf } from '../pdf/writePdf.js';
 import { DPI } from '../pipeline/pipeline.js';
 import { run } from '../pipeline/run.js';
 import { batches, bookOrder, packPages, unpackPages } from '../print/book.js';
-import { canPrintDirect, onSharedFile, printDirect, scanWithCamera, sendFiles } from '../print/direct.js';
+import { canPrintDirect, cleanupUpdate, installUpdate, onSharedFile, printDirect, scanWithCamera, sendFiles } from '../print/direct.js';
 import { shrinkToHeight } from '../image/shrink.js';
 
 /** @typedef {import('../image/types.js').Gray} Gray */
@@ -222,13 +222,18 @@ async function save(kind) {
 
 /** @param {Blob | Blob[]} file @param {boolean} [idCard] front + back of a card, on one sheet */
 export async function prepare(file, idCard = false) {
+  // A setting changed on screen: stay put and update in place instead of a full "getting ready" screen.
+  const again = file === current && !(/** @type {HTMLElement} */ (document.querySelector('section[data-state="ready"]'))).hidden;
   if (file !== current) copies = 1;
   current = file;
   opts.idCard = idCard;
-  show('working');
-  $('progress').textContent = 'Getting it ready…';
+  if (busy) { redo = true; return; } // taps while working: only the latest settings get prepared
+  busy = true;
+  const status = again ? $('summary') : $('progress');
+  if (again) $('app').classList.add('busy'); else show('working');
+  status.textContent = 'Getting it ready…';
   try {
-    const res = await run(file, (done) => { $('progress').textContent = `Getting it ready… page ${done}`; }, opts);
+    const res = await run(file, (done) => { status.textContent = `Getting it ready… page ${done}`; }, opts);
     pages = res.pages;
     skipped.clear();
     $('note').hidden = true;
@@ -268,8 +273,13 @@ export async function prepare(file, idCard = false) {
     $('err-msg').textContent = err.message;
     $('err-hint').textContent = err.hint;
     show('error');
+  } finally {
+    $('app').classList.remove('busy');
+    busy = false;
+    if (redo) { redo = false; prepare(/** @type {Blob | Blob[]} */ (current), opts.idCard); }
   }
 }
+let busy = false, redo = false;
 
 export function start() {
   const chrome = /Chrome\/(\d+)/.exec(navigator.userAgent)?.[1] ?? '?';
@@ -404,19 +414,33 @@ async function numbered(n) {
 }
 
 /**
- * Android app only: a newer version on GitHub shows an "Update" button. Tapping it downloads the
- * new app; Android then asks once to install it (it never lets an app update itself silently).
+ * Android app only, quietly on every start: a newer version on GitHub shows an "Update" button.
+ * Tapping it downloads the new app inside Inkwell (no Chrome), then Android asks once to install it
+ * (it never lets an app update itself silently). The download is deleted on the next start.
  */
 async function checkUpdate() {
   if (!canPrintDirect()) return; // the website updates by itself
+  cleanupUpdate();
   try {
     const rel = await (await fetch('https://api.github.com/repos/Arindam2000/inkwell/releases/latest')).json();
     const latest = /v(\d+\.\d+\.\d+)/.exec(rel.name ?? '')?.[1];
     if (!latest || !newer(latest, __APP_VERSION__)) return;
     const b = /** @type {HTMLButtonElement} */ ($('update'));
-    b.textContent = `Update ready: v${latest}`;
+    const ready = `Update to v${latest}`;
+    b.textContent = ready;
     b.hidden = false;
-    b.addEventListener('click', () => { location.href = 'https://github.com/Arindam2000/inkwell/releases/latest/download/inkwell.apk'; });
+    b.addEventListener('click', async () => {
+      b.disabled = true;
+      try {
+        const res = await installUpdate((pct) => { b.textContent = pct < 0 ? 'Downloading…' : `Downloading… ${pct}%`; });
+        b.textContent = ready;
+        if (res.needsPermission) note('Turn on "Allow from this source" for Inkwell, come back, then tap Update again.');
+      } catch {
+        b.textContent = ready;
+        note("Couldn't download the update. Check the Wi-Fi and tap Update again.");
+      }
+      b.disabled = false;
+    });
   } catch { /* offline: try next time */ }
 }
 

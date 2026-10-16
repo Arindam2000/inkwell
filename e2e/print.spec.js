@@ -141,3 +141,20 @@ test('mini book: several PDFs at once fold into one pocket book; the numbered fo
   await expect(page.locator('img.preview')).toHaveCount(2, { timeout: 15000 });
   await expect(page.locator('.cap').first()).toHaveText('Side 1 of 2');
 });
+
+test('changing a setting updates in place, faster than the first time (no re-reading, no re-cleaning)', async ({ page }) => {
+  await page.goto('./');
+  let t = Date.now();
+  await page.locator('#file').setInputFiles(fixture('two-page.pdf'));
+  await expect(page.locator('#summary')).toHaveText('2 pages · 2 sheets', { timeout: 15000 });
+  const first = Date.now() - t;
+  t = Date.now();
+  await page.getByRole('button', { name: 'Darker' }).click();
+  await expect(page.locator('section[data-state="ready"]')).toBeVisible(); // never back to the "getting ready" screen
+  await expect(page.locator('#summary')).toHaveText('2 pages · 2 sheets', { timeout: 15000 });
+  expect(Date.now() - t).toBeLessThan(first);
+  await page.getByRole('button', { name: 'Lighter' }).click(); // two quick taps: the last one wins
+  await page.getByRole('button', { name: 'Normal' }).click();
+  await expect(page.locator('#summary')).toHaveText('2 pages · 2 sheets', { timeout: 15000 });
+  await expect(page.locator('#app')).not.toHaveClass(/busy/);
+});

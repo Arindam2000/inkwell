@@ -51,3 +51,7 @@ h2 { margin: 0; font-size: 22px; }
 .more summary { min-height: 48px; display: flex; align-items: center; font-weight: 600; cursor: pointer; }
 .more .choice { margin-top: 10px; }
 .more .hint { text-align: left; font-size: 14px; margin-top: 2px; }
+
+/* A setting changed: the old pages stay on screen, dimmed and untappable, until the new ones are ready. */
+.busy #previews, .busy #print, .busy #book, .busy .pair { opacity: 0.4; pointer-events: none; }
+

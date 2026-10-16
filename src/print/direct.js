@@ -114,3 +114,16 @@ export async function printDirect(pages, dpi, name, onProgress = () => {}, quali
   const status = ippStatus(Uint8Array.from(atob(reply.data), (c) => c.charCodeAt(0)));
   if (status > 0xff) throw new InkwellError('The printer said no.', `Check it has paper and no error light (code ${status.toString(16)}).`);
 }
+
+/** Android app only: download a new version inside the app and open the installer (android/.../UpdatePlugin.java). @type {any} */
+const Update = registerPlugin('Update');
+const APK = 'https://github.com/Arindam2000/inkwell/releases/latest/download/inkwell.apk';
+
+/** @param {(pct: number) => void} onProgress -1 when the size is unknown @returns {Promise<{needsPermission?: boolean}>} */
+export async function installUpdate(onProgress) {
+  const listener = await Update.addListener('progress', (/** @type {{pct: number}} */ e) => onProgress(e.pct));
+  try { return await Update.install({ url: APK }); } finally { listener.remove(); }
+}
+
+/** Delete a downloaded update (it's installed by now, or was cancelled). */
+export const cleanupUpdate = () => Update.cleanup().catch(() => {});

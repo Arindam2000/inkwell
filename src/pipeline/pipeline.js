@@ -26,9 +26,16 @@ export const PREVIEW_HEIGHT = 600;
  */
 
 /** One page: clean-up, ink saver, lighter/darker, printer tuning, then onto A4. @param {Gray} g @param {Profile} profile @param {Options} [opts] */
-export function processPage(g, profile, { tone = 1, clean = 'auto', size = 'fit', inkSaver = false } = {}) {
+export function processPage(g, profile, opts = {}) {
+  return finishPage(prepPage(g, opts.clean), profile, opts);
+}
+
+/** The slow part (clean-up), kept apart so other settings can change without redoing it. @param {Gray} g @param {Options['clean']} [clean] @returns {Gray} */
+export const prepPage = (g, clean = 'auto') => ({ ...scan(g, clean), dpi: g.dpi });
+
+/** Everything after clean-up: quick, redone whenever a setting changes. @param {Gray} g @param {Profile} profile @param {Options} [opts] */
+function finishPage(g, profile, { tone = 1, size = 'fit', inkSaver = false } = {}) {
   const actualDpi = size === 'actual' && g.dpi ? g.dpi : 0;
-  g = scan(g, clean);
   if (inkSaver) g = flipIfDark(g);
   const toned = tone === 1 ? g : applyCurve(g, Array.from({ length: 17 }, (_, i) => [i / 16, (i / 16) ** tone]));
   return fitA4(applyCurve(toned, profile.curve), { dpi: DPI, actualDpi });
@@ -111,10 +118,10 @@ export class Job {
     this.tonerSum = 0;
   }
 
-  /** A finished page or sheet, or no preview yet while pages wait to share a sheet. @param {Gray} g */
-  async add(g) {
+  /** A finished page or sheet, or no preview yet while pages wait to share a sheet. @param {Gray} g @param {boolean} [prepped] already cleaned up (prepPage) */
+  async add(g, prepped = false) {
     if (this.opts.idCard) return this.addCard(g);
-    const page = processPage(g, this.profile, this.opts);
+    const page = finishPage(prepped ? g : prepPage(g, this.opts.clean), this.profile, this.opts);
     if (this.opts.booklet || this.opts.mini) { this.held.push(await compressPage(page)); return { preview: null, tonerPct: 0 }; }
     const n = this.opts.perSheet ?? 1;
     if (n === 1) return this.keep(page);
