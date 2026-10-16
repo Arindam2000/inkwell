@@ -30,6 +30,7 @@ export function cleanScan(g, { force = true } = {}) {
     if (white / (out.length / 7) < DOC_WHITE) return null;
   }
   despeckle(out, w, h);
+  removeFingers(out, w, h);
   return { width: w, height: h, data: out };
 }
 
@@ -130,6 +131,41 @@ function boxFilter(a, w, h, r) {
     o[y * w + x] = Math.round(s / n);
   }
   return o;
+}
+
+/**
+ * Fingers holding the page: big, thick, non-white blobs that come in from the page edge.
+ * Text and lines are thin, so they vanish when the dark area is shrunk by ~1.5% of the page;
+ * a thumb doesn't. Whatever thick blob touches the border is wiped to white.
+ * Worked on a 1/4-size copy, so it stays fast on big photos.
+ * ponytail: a full-bleed photo or black bar touching the edge would be wiped too; Clean-up "Off" keeps it.
+ * @param {Uint8Array} a @param {number} w @param {number} h
+ */
+function removeFingers(a, w, h) {
+  const K = 4, sw = Math.ceil(w / K), sh = Math.ceil(h / K);
+  const dark = new Uint8Array(sw * sh);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (a[y * w + x] < 230) dark[((y / K) | 0) * sw + ((x / K) | 0)] = 255;
+  const r = Math.max(2, Math.round(Math.min(sw, sh) * 0.015));
+  const core = minFilter(dark, sw, sh, r); // only thick blobs survive
+  // Grow each thick core back over its dark area; keep the ones that reach the border.
+  const blob = new Int32Array(sw * sh).fill(-1);
+  const wipe = new Uint8Array(sw * sh);
+  for (let s = 0; s < core.length; s++) {
+    if (!core[s] || blob[s] >= 0) continue;
+    const pix = [s];
+    blob[s] = s;
+    let edge = false;
+    for (let j = 0; j < pix.length; j++) {
+      const i = pix[j], x = i % sw, y = (i - x) / sw;
+      if (x === 0 || y === 0 || x === sw - 1 || y === sh - 1) edge = true;
+      for (const n of [x > 0 ? i - 1 : -1, x < sw - 1 ? i + 1 : -1, i - sw, i + sw]) {
+        if (n >= 0 && n < dark.length && dark[n] && blob[n] < 0) { blob[n] = s; pix.push(n); }
+      }
+    }
+    if (edge) for (const i of pix) wipe[i] = 1;
+  }
+  const grown = maxFilter(wipe, sw, sh, 1); // cover the blob's soft rim too
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (grown[((y / K) | 0) * sw + ((x / K) | 0)]) a[y * w + x] = 255;
 }
 
 /** Dark pixels with almost no dark neighbours are dust, not ink: make them white. @param {Uint8Array} a @param {number} w @param {number} h */

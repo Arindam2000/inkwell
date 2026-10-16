@@ -77,6 +77,24 @@ def degrade(rgb, rng, show_through, light, tint):
     return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
 
 
+def finger(img, rng):
+    """A thumb holding the page: a skin-toned rounded blob coming in from a side edge, with a soft shadow."""
+    im = img.convert("RGB")
+    layer = Image.new("L", im.size, 0)
+    d = ImageDraw.Draw(layer)
+    side = rng.choice(["left", "right", "bottom"])
+    y = rng.randint(300, H - 300); x = rng.randint(250, W - 250)
+    box = {"left": (-120, y - 70, 170, y + 70), "right": (W - 170, y - 70, W + 120, y + 70),
+           "bottom": (x - 70, H - 170, x + 70, H + 120)}[side]
+    d.rounded_rectangle(box, radius=70, fill=255)
+    shadow = layer.filter(ImageFilter.GaussianBlur(14))
+    a = np.asarray(im, dtype=np.float64) * (1 - 0.35 * np.asarray(shadow, dtype=np.float64)[..., None] / 255)
+    skin = np.array(rng.choice([(205, 150, 120), (170, 115, 85), (225, 180, 150)]), dtype=np.float64)
+    m = (np.asarray(layer.filter(ImageFilter.GaussianBlur(2)), dtype=np.float64) / 255)[..., None]
+    a = a * (1 - m) + skin * m * (0.85 + 0.15 * np.random.default_rng(1).random(a.shape[:2]))[..., None]
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
+
+
 def hard_shadow(img, rng):
     """A phone or hand shadow: a soft dark band across part of the page."""
     a = np.asarray(img, dtype=np.float64)
@@ -152,6 +170,9 @@ if __name__ == "__main__":
         ("pencil", "drive", dict(st=0.12, light=0.15, pencil=True), "plain"),
         ("gallery", "gallery", dict(st=0.1, light=0.5), "table"),
         ("darkroom", "camera", dict(st=0.2, light=0.6), "bill"),
+        ("finger", "gallery", dict(st=0.1, light=0.2, finger=True), "plain"),
+        ("finger2", "camera", dict(st=0.1, light=0.2, finger=True), "letter"),
+        ("finger3", "drive", dict(st=0.0, light=0.1, finger=True), "table"),
     ]
     for j, (tag, route, o, kind) in enumerate(hard):
         rng = random.Random(5000 + j)
@@ -159,6 +180,8 @@ if __name__ == "__main__":
         if o.get("pencil"):  # light pencil-like ink: must still print
             a = np.asarray(rgb, dtype=np.float64); a = np.where(a < 128, 85, a)
             rgb = Image.fromarray(a.astype(np.uint8)); truth = rgb.convert("L")
+        if o.get("finger"):
+            rgb = finger(rgb, rng)
         img = degrade(rgb, rng, o["st"], o["light"], (238, 234, 222))
         name = f"h{j}-{route}-{tag}"
         if tag in ("shadow", "darkroom"):
