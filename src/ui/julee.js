@@ -1,45 +1,87 @@
 /**
- * Julee, Arindam's Indian Spitz: white and fluffy, pointy ears, curled plume tail, tongue out,
- * in her striped sweater and red collar with its little charm.
- * Drawn as an SVG so she stays crisp and tiny; style.css makes her blink, pant and wag.
- * @param {'wait'|'hello'} mood wait: a page floats up beside her (loading); hello: she pops up to greet.
+ * Julee, Arindam's Indian Spitz, drawn anime-style: white fluffy fur with soft cream shading, pointy
+ * pink-lined ears, big glossy eyes, blush, tongue out, curled plume tail, her striped sweater and
+ * red collar with its little gold charm. style.css gives her slow, soothing motion.
+ * @param {'wait'|'hello'} mood wait: a page floats up beside her (loading); hello: she hops in to greet.
  * @returns {SVGSVGElement}
  */
 export function julee(mood) {
+  const id = (/** @type {string} */ n) => `${n}-${mood}`;
   const box = document.createElement('div');
   box.innerHTML = `
-<svg class="julee ${mood}" viewBox="0 0 240 200" role="img" aria-label="Julee the dog">
-  <ellipse class="shadow" cx="100" cy="186" rx="58" ry="7"/>
-  <g class="tail">
-    <circle cx="150" cy="152" r="19"/><circle cx="166" cy="136" r="17"/><circle cx="173" cy="116" r="14"/>
-    <circle cx="168" cy="99" r="11"/><circle cx="158" cy="92" r="8"/>
-  </g>
-  <ellipse class="fur" cx="100" cy="146" rx="46" ry="38"/>
-  <clipPath id="body-${mood}"><ellipse cx="100" cy="146" rx="45" ry="37"/></clipPath>
-  <g class="sweater" clip-path="url(#body-${mood})">
-    <rect class="s-blue" x="50" y="108" width="100" height="12"/><rect class="s-beige" x="50" y="120" width="100" height="8"/>
-    <rect class="s-yellow" x="50" y="128" width="100" height="8"/><rect class="s-green" x="50" y="136" width="100" height="6"/>
-    <rect class="s-blue" x="50" y="142" width="100" height="10"/><rect class="s-yellow" x="50" y="152" width="100" height="6"/>
-  </g>
-  <rect class="fur" x="80" y="150" width="17" height="34" rx="8.5"/>
-  <rect class="fur" x="104" y="150" width="17" height="34" rx="8.5"/>
-  <g class="head">
-    <path class="fur" d="M66 70 L76 26 L98 56 Z"/><path class="ear-in" d="M73 62 L78 38 L90 56 Z"/>
-    <path class="fur" d="M134 70 L124 26 L102 56 Z"/><path class="ear-in" d="M127 62 L122 38 L110 56 Z"/>
-    <circle class="fur" cx="100" cy="82" r="36"/>
-    <circle class="mane" cx="100" cy="128" r="20"/>
-    <path class="collar" d="M80 112 Q100 122 120 112"/><circle class="charm" cx="100" cy="122" r="4"/>
-    <g class="eyes"><circle cx="87" cy="78" r="4.2"/><circle cx="113" cy="78" r="4.2"/></g>
-    <ellipse class="dark" cx="100" cy="93" rx="6" ry="4.4"/>
-    <path class="tongue" d="M93 101 Q93 117 100 117 Q107 117 107 101 Z"/>
-    <path class="mouth" d="M90 98 Q95 103 100 99 Q105 103 110 98"/>
+<svg class="julee ${mood}" viewBox="0 0 260 230" role="img" aria-label="Julee the dog">
+  <defs>
+    <radialGradient id="${id('fur')}" cx="0.4" cy="0.3" r="0.85"><stop offset="0.55" stop-color="#fff"/><stop offset="1" stop-color="#efe4cf"/></radialGradient>
+    <radialGradient id="${id('eye')}" cx="0.45" cy="0.6" r="0.7"><stop offset="0" stop-color="#7a4b28"/><stop offset="0.7" stop-color="#3a2416"/><stop offset="1" stop-color="#1d120b"/></radialGradient>
+    <linearGradient id="${id('ear')}" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffb3bd"/><stop offset="1" stop-color="#ffd9de"/></linearGradient>
+    <linearGradient id="${id('tongue')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7d95"/><stop offset="1" stop-color="#ffa3b4"/></linearGradient>
+    <clipPath id="${id('body')}"><ellipse cx="112" cy="162" rx="48" ry="42"/></clipPath>
+  </defs>
+  <ellipse class="shadow" cx="112" cy="214" rx="64" ry="7"/>
+  <g class="sparkles">${[[34, 56], [214, 38], [228, 132], [22, 150]].map(([x, y], i) => `<path class="spark s${i}" d="M${x} ${y - 7} Q${x} ${y} ${x + 7} ${y} Q${x} ${y} ${x} ${y + 7} Q${x} ${y} ${x - 7} ${y} Q${x} ${y} ${x} ${y - 7} Z"/>`).join('')}</g>
+  <g class="breathe">
+    <g class="tail">
+      <path class="fur" fill="url(#${id('fur')})" d="${fluff(166, 136, 26, 42, 18, 0.11, 0.45)}"/>
+      <path class="fur" fill="url(#${id('fur')})" d="${fluff(171, 108, 17, 19, 12, 0.13, 0.3)}"/>
+    </g>
+    <path class="fur" fill="url(#${id('fur')})" d="${fluff(112, 162, 50, 44, 24, 0.07, 0)}"/>
+    <g clip-path="url(#${id('body')})">
+      ${[[124, 'blue', 12], [136, 'beige', 7], [143, 'yellow', 8], [151, 'green', 6], [157, 'blue', 10], [167, 'yellow', 6], [173, 'beige', 30]]
+        .map(([y, c, h]) => `<path class="s-${c}" d="M56 ${y} Q112 ${+y + 9} 168 ${y} L168 ${+y + +h} Q112 ${+y + +h + 9} 56 ${+y + +h} Z"/>`).join('')}
+    </g>
+    <g class="legs">
+      <rect class="fur" fill="url(#${id('fur')})" x="88" y="172" width="21" height="40" rx="10.5"/>
+      <rect class="fur" fill="url(#${id('fur')})" x="115" y="172" width="21" height="40" rx="10.5"/>
+      <path class="toe" d="M95 206 v5 M102 206 v5 M122 206 v5 M129 206 v5"/>
+    </g>
+    <path class="fur ruff" fill="url(#${id('fur')})" d="${fluff(112, 126, 32, 16, 16, 0.14, 0)}"/>
+    <g class="head">
+      <g class="ear left"><path class="fur" fill="url(#${id('fur')})" d="M70 70 C64 46 68 24 78 10 C90 24 100 40 104 56 Z"/>
+        <path fill="url(#${id('ear')})" d="M76 62 C73 46 75 32 80 22 C87 33 93 44 96 54 Z"/></g>
+      <g class="ear right"><path class="fur" fill="url(#${id('fur')})" d="M154 70 C160 46 156 24 146 10 C134 24 124 40 120 56 Z"/>
+        <path fill="url(#${id('ear')})" d="M148 62 C151 46 149 32 144 22 C137 33 131 44 128 54 Z"/></g>
+      <path class="fur" fill="url(#${id('fur')})" d="${fluff(112, 84, 46, 40, 26, 0.06, 0)}"/>
+      <path class="collar" d="M84 118 Q112 130 140 118"/>
+      <g class="charm"><path class="cord" d="M112 124 v6"/><circle cx="112" cy="134" r="4.6"/></g>
+      <ellipse class="blush" cx="86" cy="98" rx="8" ry="4"/><ellipse class="blush" cx="138" cy="98" rx="8" ry="4"/>
+      <g class="eyes">
+        <ellipse fill="url(#${id('eye')})" cx="95" cy="84" rx="8.5" ry="10.5"/><ellipse fill="url(#${id('eye')})" cx="129" cy="84" rx="8.5" ry="10.5"/>
+        <circle class="shine" cx="92" cy="79.5" r="3.4"/><circle class="shine" cx="126" cy="79.5" r="3.4"/>
+        <circle class="shine small" cx="98.5" cy="89" r="1.6"/><circle class="shine small" cx="132.5" cy="89" r="1.6"/>
+      </g>
+      <path class="nose" d="M105 96 Q112 92.5 119 96 Q116 102.5 112 102.5 Q108 102.5 105 96 Z"/>
+      <ellipse class="nose-shine" cx="109.5" cy="96.5" rx="2.2" ry="1.2"/>
+      <path class="tongue" fill="url(#${id('tongue')})" d="M106 106 Q106 119 112 119 Q118 119 118 106 Z"/>
+      <path class="mouth" d="M112 102.5 v3.5 M112 106 Q107 110.5 102.5 106.5 M112 106 Q117 110.5 121.5 106.5"/>
+      <path class="tongue-line" d="M112 109 v6"/>
+    </g>
   </g>
   ${mood === 'wait' ? `
   <g class="page">
-    <rect x="182" y="96" width="40" height="52" rx="4"/>
-    <path d="M190 110 h24 M190 120 h24 M190 130 h16"/>
+    <rect x="206" y="120" width="38" height="50" rx="5"/>
+    <path d="M213 133 h24 M213 142 h24 M213 151 h16"/>
   </g>
-  <path class="arrow" d="M202 52 v-34 m-10 10 l10 -10 l10 10"/>` : ''}
+  <path class="arrow" d="M225 104 v-30 m-10 10 l10 -10 l10 10"/>` : ''}
 </svg>`;
   return /** @type {SVGSVGElement} */ (box.firstElementChild);
+}
+
+/**
+ * A fluffy fur outline: an ellipse whose edge is a ring of soft tufts (each tuft bulges outward).
+ * Tuft sizes vary a little (fixed pattern, so she looks the same every time).
+ * @param {number} cx @param {number} cy @param {number} rx @param {number} ry
+ * @param {number} n tufts @param {number} depth how far tufts stick out (share of the radius) @param {number} turn tilt in radians
+ */
+function fluff(cx, cy, rx, ry, n, depth, turn) {
+  const at = (/** @type {number} */ a, /** @type {number} */ k) => {
+    const x = Math.cos(a) * rx * k, y = Math.sin(a) * ry * k;
+    return `${(cx + x * Math.cos(turn) - y * Math.sin(turn)).toFixed(1)} ${(cy + x * Math.sin(turn) + y * Math.cos(turn)).toFixed(1)}`;
+  };
+  let d = `M${at(0, 1)}`;
+  for (let i = 0; i < n; i++) {
+    const a0 = (i / n) * 2 * Math.PI, a1 = ((i + 1) / n) * 2 * Math.PI;
+    const k = 1 + depth * (1 + 0.4 * Math.sin(i * 2.7));
+    d += ` Q${at((a0 + a1) / 2, k)} ${at(a1, 1)}`;
+  }
+  return `${d} Z`;
 }

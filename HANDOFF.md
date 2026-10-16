@@ -74,3 +74,5 @@
 
 - v0.19.0: faster opening (auto clean-up skipped on pure-white computer-made PDF pages; next page is read while the worker processes the last). Julee (his Indian Spitz) drawn in src/ui/julee.js: welcome on the start screen ('নমস্কার! আজ কী প্রিন্ট করবো?'), loading ('একটু অপেক্ষা করুন!', a page floats up; new files wait for one full 2.4 s float before opening). More options has a turning arrow.
 
+- v0.20.0: Julee redrawn anime-style (fluff() tuft outlines, gradients, glossy eyes, blush, sweater stripes, swinging charm), slow ease-in-out motion (breathe 3.6 s, sway 6 s, tail 2.2 s, ear flick, blink, sparkles). Bubbles: Bengali (20px) + English (15px) underneath. No AI image tool in this setup; for hand-drawn anime art, he'd make a still in an image AI and I'd animate it.
+
