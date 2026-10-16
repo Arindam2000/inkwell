@@ -44,3 +44,7 @@
 - v0.11.0 is the last finished version (APK built OK). Everything after is WIP in the latest commit.
 - WIP "more print options": Quality Draft/Normal/Best (IPP print-quality 3/4/5), Size Fit/Actual (PDF dpi), 4 per sheet, Booklet (bookletSides + nUp), Ink saver (flipIfDark), all under a "More options" <details>. Unit tests + type check pass.
 - To finish: e2e/print.spec.js last test — after picking Draft, call `await open2(page)` instead of `page.reload()` (options live on the ready screen). Then run all checks, bump to 0.12.0, deploy, push main for the APK, tell Arindam.
+
+## Update 2026-10-16 (v0.12.0)
+- More options done: Quality Draft/Normal/Best, Actual size, 4 per sheet, Booklet, Ink saver. 41 unit + 21 e2e pass. Committed locally; deploy + push await Arindam's OK.
+
