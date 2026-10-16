@@ -26,7 +26,7 @@ test('processes pages sequentially', async () => {
   expect(res.previews).toHaveLength(20);
   expect(res.previews[0].height).toBe(600);
   expect(res.tonerPct).toBeGreaterThan(0);
-});
+}, 30_000); // 20 full A4 pages: slow when the scan lab runs alongside
 
 test('darker / lighter shift mid-grays, keep black and white', () => {
   const mid = (tone) => processPage(flat(128), HP_M126NW, { tone, clean: 'off' }).data[1754 * 2480 + 1240];
