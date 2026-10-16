@@ -9,6 +9,15 @@ async function deflate(bytes) {
 }
 
 /**
+ * Compress one page now, so the full-size pixels can be dropped right away.
+ * @param {Gray} g
+ * @returns {Promise<{width: number, height: number, bytes: Uint8Array}>}
+ */
+export async function compressPage(g) {
+  return { width: g.width, height: g.height, bytes: await deflate(g.data) };
+}
+
+/**
  * Wrap gray pages into a PDF, one page each, sized width/dpi x height/dpi inches.
  * Lossless (Flate) and /Interpolate false, so printed dots are exactly ours.
  * @param {Gray[]} pages
@@ -16,6 +25,15 @@ async function deflate(bytes) {
  * @returns {Promise<Uint8Array>}
  */
 export async function writePdf(pages, dpi) {
+  return assemblePdf(await Promise.all(pages.map(compressPage)), dpi);
+}
+
+/**
+ * @param {{width: number, height: number, bytes: Uint8Array}[]} pages already compressed
+ * @param {number} dpi
+ * @returns {Uint8Array}
+ */
+export function assemblePdf(pages, dpi) {
   /** @type {(Uint8Array|string)[][]} */
   const objs = [];
   const kids = [];
@@ -26,7 +44,7 @@ export async function writePdf(pages, dpi) {
     const h = ((p.height / dpi) * 72).toFixed(2);
     const pageId = objs.length + 1;
     const content = `q ${w} 0 0 ${h} 0 0 cm /Im0 Do Q`;
-    const data = await deflate(p.data);
+    const data = p.bytes;
     kids.push(`${pageId} 0 R`);
     objs.push([`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w} ${h}] /Resources << /XObject << /Im0 ${pageId + 1} 0 R >> >> /Contents ${pageId + 2} 0 R >>`]);
     objs.push([`<< /Type /XObject /Subtype /Image /Width ${p.width} /Height ${p.height} /ColorSpace /DeviceGray /BitsPerComponent 8 /Interpolate false /Filter /FlateDecode /Length ${data.length} >>\nstream\n`, data, '\nendstream']);
