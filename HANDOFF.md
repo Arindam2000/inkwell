@@ -15,3 +15,10 @@
 3. One fresh reviewer at the end ("simple" mode).
 
 **Gotcha:** the 🖨️ emoji in the folder name breaks WScript `.lnk` shortcuts (old `pass1 - Shortcut.lnk` points at spike 01). Use copies or a UTF-8 `.cmd` with `chcp 65001`.
+
+## Update 2026-10-16 (later)
+- v0.1.0 live at arindam2000.github.io/inkwell (Pages on gh-pages, he enabled it). Spike 03 results in PROGRESS.md.
+- v0.2.0: Print button (share PDF -> print app, download fallback) + book print (odd pages, re-insert stack blank side up, even pages reversed; blank back for odd counts; resumes after app close; "how did backs come out" learns rotate/reverse in localStorage).
+- His printer: output face down (printed side down, blank up), last sheet on top.
+- Next (his choice B): camera scan inside Inkwell, no Drive. He wants **magic crop (page edge detect + perspective fix) and auto enhance**, like Drive's scanner.
+- Phone acceptance (ruler 100 mm, offline, share) still pending on Mi A1 + Realme 3 Pro.
