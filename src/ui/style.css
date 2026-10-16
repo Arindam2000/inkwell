@@ -56,3 +56,5 @@ h2 { margin: 0; font-size: 22px; }
 /* A setting changed: the old pages stay on screen, dimmed and untappable, until the new ones are ready. */
 .busy #previews, .busy #print, .busy #book, .busy .pair { opacity: 0.4; pointer-events: none; }
 
+[data-working] { opacity: 0.6; }
+

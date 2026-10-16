@@ -32,10 +32,9 @@ async function toImage(g, type = 'image/png') {
   const c = new OffscreenCanvas(g.width, g.height);
   const ctx = /** @type {OffscreenCanvasRenderingContext2D} */ (c.getContext('2d'));
   const img = ctx.createImageData(g.width, g.height);
-  for (let i = 0; i < g.data.length; i++) {
-    const v = g.data[i];
-    img.data.set([v, v, v, 255], i * 4);
-  }
+  // One 32-bit write per pixel (gray → R=G=B, opaque); a small array per pixel took seconds on a phone.
+  const px = new Uint32Array(img.data.buffer);
+  for (let i = 0; i < g.data.length; i++) px[i] = 0xff000000 | (g.data[i] * 0x010101);
   ctx.putImageData(img, 0, 0);
   return c.convertToBlob({ type, quality: 0.92 });
 }
@@ -212,12 +211,13 @@ async function view(n) {
  * Save the pages that will print, as one PDF or as JPEG pictures: through the Share menu (to Drive,
  * Files, WhatsApp) in the Android app, as downloads in Chrome. @param {'pdf'|'jpg'} kind
  */
-async function save(kind) {
+async function save(kind, /** @type {HTMLElement} */ btn) {
   const list = chosen();
   /** @type {{name: string, type: string, bytes: Uint8Array}[]} */
   const files = [];
   if (kind === 'pdf') files.push({ name: 'inkwell.pdf', type: 'application/pdf', bytes: assemblePdf(list, DPI) });
   else for (const [i, p] of list.entries()) {
+    btn.textContent = `Saving ${i + 1} of ${list.length}…`;
     const jpg = await toImage(await pixels(p), 'image/jpeg');
     files.push({ name: `inkwell-${i + 1}.jpg`, type: 'image/jpeg', bytes: new Uint8Array(await jpg.arrayBuffer()) });
   }
@@ -290,6 +290,34 @@ export async function prepare(file, idCard = false) {
 }
 let busy = false, redo = false;
 
+/**
+ * A slow button: while it works it reads e.g. "Saving…" and further taps are ignored,
+ * so impatient taps can't pile up several saves or prints. @param {HTMLElement} btn @param {string} working
+ * @param {(btn: HTMLElement) => Promise<unknown>} action
+ */
+function guard(btn, working, action) {
+  const b = /** @type {HTMLButtonElement} */ (btn);
+  b.addEventListener('click', async () => {
+    if (b.dataset.working) return;
+    const label = b.textContent;
+    b.dataset.working = '1';
+    b.textContent = working;
+    try { await action(b); } finally {
+      delete b.dataset.working;
+      b.textContent = label;
+    }
+  });
+}
+
+/** Phone Back in the Android app (MainActivity asks): true if Inkwell went back a step, false to leave the app. */
+/** @type {any} */ (window).inkwellBack = () => {
+  if (!$('viewer').hidden) { $('viewer').hidden = true; return true; }
+  if (!document.querySelector('section[data-state="empty"]')?.hasAttribute('hidden')) return false;
+  history.replaceState(null, '');
+  show('empty');
+  return true;
+};
+
 export function start() {
   const chrome = /Chrome\/(\d+)/.exec(navigator.userAgent)?.[1] ?? '?';
   $('about').textContent = `Inkwell v${__APP_VERSION__} · Chrome ${chrome}`;
@@ -311,8 +339,8 @@ export function start() {
   checkUpdate();
 
   $('print-hint').hidden = canPrintDirect();
-  $('save-pdf').addEventListener('click', () => save('pdf'));
-  $('save-img').addEventListener('click', () => save('jpg'));
+  guard($('save-pdf'), 'Saving…', (b) => save('pdf', b));
+  guard($('save-img'), 'Saving…', (b) => save('jpg', b));
   $('v-close').addEventListener('click', () => { $('viewer').hidden = true; });
   $('v-prev').addEventListener('click', () => view(viewing - 1));
   $('v-next').addEventListener('click', () => view(viewing + 1));
@@ -360,7 +388,7 @@ export function start() {
   }));
   $('minus').addEventListener('click', () => { copies = Math.max(1, copies - 1); refresh(); });
   $('plus').addEventListener('click', () => { copies = Math.min(20, copies + 1); refresh(); });
-  $('print').addEventListener('click', () => output(Array.from({ length: copies }, chosen).flat(), 'inkwell'));
+  guard($('print'), 'Sending…', () => output(Array.from({ length: copies }, chosen).flat(), 'inkwell'));
   $('book').addEventListener('click', async () => {
     book = chosen();
     setBatch(0);

@@ -185,3 +185,25 @@ test('Home: shown on every screen but the start, and goes straight back to it', 
   await expect(page.getByRole('button', { name: 'Choose photos or PDFs' })).toBeVisible();
   await expect(page.getByRole('button', { name: '⌂ Home' })).toBeHidden();
 });
+
+test('Save as image: extra taps while saving are ignored (one picture per page, not one per tap)', async ({ page }) => {
+  await open2(page);
+  const files = [];
+  page.on('download', (d) => files.push(d.suggestedFilename()));
+  const btn = page.getByRole('button', { name: 'Save as image' });
+  await page.evaluate(() => { const b = document.getElementById('save-img'); b.click(); b.click(); b.click(); }); // three impatient taps
+  await expect(btn).toBeVisible({ timeout: 15000 }); // label back = done
+  await page.waitForTimeout(500);
+  expect(files.sort()).toEqual(['inkwell-1.jpg', 'inkwell-2.jpg']);
+});
+
+test('app Back (Android asks the page): preview first, then pages, then lets the app leave', async ({ page }) => {
+  await open2(page);
+  await page.locator('button.open').first().click();
+  const back = () => page.evaluate(() => window.inkwellBack());
+  expect(await back()).toBe(true);
+  await expect(page.locator('#viewer')).toBeHidden();
+  expect(await back()).toBe(true);
+  await expect(page.getByRole('button', { name: 'Choose photos or PDFs' })).toBeVisible();
+  expect(await back()).toBe(false);
+});

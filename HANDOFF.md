@@ -66,3 +66,5 @@
 
 - v0.16.0: '⌂ Home' button in the header on every screen except the start screen (same action as Back).
 
+- v0.17.0: Android Back handled natively (MainActivity OnBackPressedCallback asks window.inkwellBack(); false = moveTaskToBack). No @capacitor/app plugin, so before this Back closed the app. Save as image: gray->RGBA with Uint32 writes (was a 4-element array per pixel). Save/Print buttons guarded: taps while working are ignored, label shows 'Saving 2 of 5…'.
+
