@@ -69,6 +69,8 @@ h2 { margin: 0; font-size: 22px; }
 .julee { display: block; width: 100%; max-width: 260px; margin: 0 auto; overflow: visible; }
 .julee .fur, .julee .tail circle, .julee .mane { fill: #fff; stroke: #d6cfbf; stroke-width: 2; }
 .julee .ear-in { fill: #f6c4c4; }
+.julee .s-blue { fill: #2f55b8; } .julee .s-yellow { fill: #e0b52c; } .julee .s-green { fill: #2e8b4e; } .julee .s-beige { fill: #e8dcc4; }
+.julee .collar { fill: none; stroke: #a63d2a; stroke-width: 6; stroke-linecap: round; } .julee .charm { fill: #e0b52c; stroke: #8a5a10; stroke-width: 1.5; }
 .julee .dark, .julee .eyes circle { fill: #2a2522; }
 .julee .mouth { fill: none; stroke: #2a2522; stroke-width: 2; stroke-linecap: round; }
 .julee .tongue { fill: #ff8fa3; transform-origin: 100px 101px; animation: pant 0.45s ease-in-out infinite alternate; }

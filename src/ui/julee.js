@@ -1,5 +1,6 @@
 /**
- * Julee, Arindam's Indian Spitz: white and fluffy, pointy ears, curled plume tail, tongue out.
+ * Julee, Arindam's Indian Spitz: white and fluffy, pointy ears, curled plume tail, tongue out,
+ * in her striped sweater and red collar with its little charm.
  * Drawn as an SVG so she stays crisp and tiny; style.css makes her blink, pant and wag.
  * @param {'wait'|'hello'} mood wait: a page floats up beside her (loading); hello: she pops up to greet.
  * @returns {SVGSVGElement}
@@ -14,6 +15,12 @@ export function julee(mood) {
     <circle cx="168" cy="99" r="11"/><circle cx="158" cy="92" r="8"/>
   </g>
   <ellipse class="fur" cx="100" cy="146" rx="46" ry="38"/>
+  <clipPath id="body-${mood}"><ellipse cx="100" cy="146" rx="45" ry="37"/></clipPath>
+  <g class="sweater" clip-path="url(#body-${mood})">
+    <rect class="s-blue" x="50" y="108" width="100" height="12"/><rect class="s-beige" x="50" y="120" width="100" height="8"/>
+    <rect class="s-yellow" x="50" y="128" width="100" height="8"/><rect class="s-green" x="50" y="136" width="100" height="6"/>
+    <rect class="s-blue" x="50" y="142" width="100" height="10"/><rect class="s-yellow" x="50" y="152" width="100" height="6"/>
+  </g>
   <rect class="fur" x="80" y="150" width="17" height="34" rx="8.5"/>
   <rect class="fur" x="104" y="150" width="17" height="34" rx="8.5"/>
   <g class="head">
@@ -21,6 +28,7 @@ export function julee(mood) {
     <path class="fur" d="M134 70 L124 26 L102 56 Z"/><path class="ear-in" d="M127 62 L122 38 L110 56 Z"/>
     <circle class="fur" cx="100" cy="82" r="36"/>
     <circle class="mane" cx="100" cy="128" r="20"/>
+    <path class="collar" d="M80 112 Q100 122 120 112"/><circle class="charm" cx="100" cy="122" r="4"/>
     <g class="eyes"><circle cx="87" cy="78" r="4.2"/><circle cx="113" cy="78" r="4.2"/></g>
     <ellipse class="dark" cx="100" cy="93" rx="6" ry="4.4"/>
     <path class="tongue" d="M93 101 Q93 117 100 117 Q107 117 107 101 Z"/>
