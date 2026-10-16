@@ -22,3 +22,9 @@
 - His printer: output face down (printed side down, blank up), last sheet on top.
 - Next (his choice B): camera scan inside Inkwell, no Drive. He wants **magic crop (page edge detect + perspective fix) and auto enhance**, like Drive's scanner.
 - Phone acceptance (ruler 100 mm, offline, share) still pending on Mi A1 + Realme 3 Pro.
+
+## Update 2026-10-16 (afternoon)
+- Source now on github.com/Arindam2000/inkwell `main` (token has Workflows permission). `.github/workflows/apk.yml` builds the Capacitor Android app on each push -> releases/latest/download/inkwell.apk (debug-signed; key changes per build, so updates may need uninstall).
+- Android app prints direct: `src/print/{urf,ipp,direct}.js` + `android/.../IppPlugin.java` (mDNS `_ipp._tcp` discovery, IPP Print-Job with URF 600 dpi, quality 5). Spike 05 proved 100 mm exact from laptop.
+- v0.3.0: page numbers, tap-to-skip, copies, summary. v0.4.0: book print in 5-sheet batches with blank-sheet check and per-batch redo (double-feed fix).
+- Next: phone test of APK direct print; then 2 pages per sheet, lighter/darker; then camera scan (magic crop + auto enhance). Rea: Arindam to run `npx rea-agents@6.5.0 setup` himself.
