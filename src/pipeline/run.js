@@ -12,9 +12,10 @@ const BROKE = () => new InkwellError('Something went wrong while preparing the p
  * Prepare a file for printing in a background worker, so the screen never freezes.
  * @param {Blob} file
  * @param {(done: number, total: number | null) => void} onProgress
+ * @param {import('./pipeline.js').Options} [opts] lighter/darker, pages per sheet
  * @returns {Promise<{pdf: Uint8Array, pages: Page[], previews: Gray[], tonerPct: number}>}
  */
-export async function run(file, onProgress) {
+export async function run(file, onProgress, opts = {}) {
   const worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
   /** @param {any} msg @param {Transferable[]} transfer */
   const ask = (msg, transfer) => new Promise((resolve, reject) => {
@@ -29,12 +30,15 @@ export async function run(file, onProgress) {
   try {
     /** @type {Gray[]} */
     const previews = [];
+    await ask({ type: 'start', opts }, []);
+    let read = 0;
     for await (const gray of readFile(file)) {
-      const r = /** @type {{preview: Gray}} */ (await ask({ type: 'page', gray }, [gray.data.buffer]));
-      previews.push(r.preview);
-      onProgress(previews.length, null);
+      const r = /** @type {{preview: Gray | null}} */ (await ask({ type: 'page', gray }, [gray.data.buffer]));
+      if (r.preview) previews.push(r.preview);
+      onProgress(++read, null);
     }
-    const done = /** @type {{pdf: Uint8Array, pages: Page[], tonerPct: number}} */ (await ask({ type: 'finish' }, []));
+    const done = /** @type {{pdf: Uint8Array, pages: Page[], tonerPct: number, preview: Gray | null}} */ (await ask({ type: 'finish' }, []));
+    if (done.preview) previews.push(done.preview);
     return { pdf: done.pdf, pages: done.pages, previews, tonerPct: done.tonerPct };
   } finally {
     worker.terminate();

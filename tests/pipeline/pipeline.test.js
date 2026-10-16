@@ -27,3 +27,21 @@ test('processes pages sequentially', async () => {
   expect(res.previews[0].height).toBe(600);
   expect(res.tonerPct).toBeGreaterThan(0);
 });
+
+test('darker / lighter shift mid-grays, keep black and white', () => {
+  const mid = (tone) => processPage(flat(128), HP_M126NW, { tone }).data[1754 * 2480 + 1240];
+  expect(mid(0.8)).toBeGreaterThan(mid(1)); // lighter
+  expect(mid(1.25)).toBeLessThan(mid(1)); // darker
+  expect(processPage(flat(255), HP_M126NW, { tone: 1.25 }).data[0]).toBe(255);
+});
+
+test('2 pages per sheet: page 1 on top, page 2 below, an odd last page shares with blank', async () => {
+  async function* pages() { yield flat(0); yield flat(255); yield flat(0); }
+  const res = await processAll(pages(), HP_M126NW, () => {}, { perSheet: 2 });
+  expect(res.pages).toHaveLength(2);
+  expect(res.previews).toHaveLength(2);
+  const p = res.previews[0];
+  const at = (fx, fy) => p.data[Math.round(fy * p.height) * p.width + Math.round(fx * p.width)];
+  expect(at(0.5, 0.25)).toBeLessThan(60); // black page on top
+  expect(at(0.5, 0.75)).toBeGreaterThan(200); // white page below
+});

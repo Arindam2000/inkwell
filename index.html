@@ -28,6 +28,17 @@
     <section data-state="ready" hidden>
       <p class="toner" id="toner"></p>
       <p class="summary" id="summary"></p>
+      <div class="choice" role="group" aria-label="Darkness">
+        <span>Darkness</span>
+        <button data-tone="0.8" aria-pressed="false">Lighter</button>
+        <button data-tone="1" aria-pressed="true">Normal</button>
+        <button data-tone="1.25" aria-pressed="false">Darker</button>
+      </div>
+      <div class="choice" role="group" aria-label="Pages per sheet">
+        <span>Per sheet</span>
+        <button data-per="1" aria-pressed="true">1 page</button>
+        <button data-per="2" aria-pressed="false">2 pages</button>
+      </div>
       <div class="copies">
         <span>Copies</span>
         <button id="minus" class="step" aria-label="Fewer copies">−</button>

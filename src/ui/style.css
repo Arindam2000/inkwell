@@ -32,3 +32,7 @@ h2 { margin: 0; font-size: 22px; }
 .page[aria-pressed="false"] .cap::after { content: " · Skipped"; color: var(--gold); font-weight: 600; }
 .cap { font-size: 15px; color: var(--muted); }
 .batch { margin: 0; font-weight: 600; color: var(--gold); }
+.choice { display: flex; align-items: center; gap: 6px; }
+.choice span { flex: 1; }
+.choice button { min-height: 48px; padding: 0 12px; border-radius: 12px; border: 2px solid var(--line); background: none; color: var(--ink); font: inherit; font-size: 16px; }
+.choice button[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper); font-weight: 600; }

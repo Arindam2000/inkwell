@@ -76,3 +76,19 @@ test('page numbers, tap to skip a page, copies: what you see is what prints', as
   await page.getByRole('button', { name: 'Print', exact: true }).click();
   await expect.poll(() => shared(page)).toEqual([{ name: 'inkwell.pdf', pages: 2, turned: 0 }]);
 });
+
+test('2 pages per sheet and darker: previews redo, sheet count halves, setting remembered', async ({ page }) => {
+  await recordShares(page);
+  await open2(page);
+  await page.getByRole('button', { name: '2 pages' }).click();
+  await expect(page.locator('img.preview')).toHaveCount(1, { timeout: 15000 });
+  await expect(page.getByText('Sheet 1 of 1')).toBeVisible();
+  await expect(page.locator('#summary')).toHaveText('1 sheet (2 pages each) · 1 sheet');
+  await page.getByRole('button', { name: 'Print', exact: true }).click();
+  await expect.poll(() => shared(page)).toEqual([{ name: 'inkwell.pdf', pages: 1, turned: 0 }]);
+
+  await page.getByRole('button', { name: 'Darker' }).click();
+  await expect(page.getByRole('button', { name: 'Darker' })).toHaveAttribute('aria-pressed', 'true');
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Darker', includeHidden: true })).toHaveAttribute('aria-pressed', 'true');
+});

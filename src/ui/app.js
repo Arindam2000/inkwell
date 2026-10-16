@@ -35,6 +35,12 @@ let pages = /** @type {Page[]} */ ([]);
 /** Pages the person tapped to leave out (indexes). */
 const skipped = new Set();
 let copies = 1;
+/** The file on screen, kept so a settings change can prepare it again. @type {Blob | null} */
+let current = null;
+const TONE = 'inkwell-tone';
+/** @type {{tone: number, perSheet: 1|2}} */
+const opts = { tone: 1, perSheet: 1 };
+try { opts.tone = Number(localStorage.getItem(TONE)) || 1; } catch { /* default */ }
 
 /** The pages that will print, in order. */
 const chosen = () => pages.filter((_, i) => !skipped.has(i));
@@ -43,7 +49,8 @@ function refresh() {
   const n = chosen().length;
   const plural = (/** @type {number} */ k, /** @type {string} */ w) => `${k} ${w}${k === 1 ? '' : 's'}`;
   $('copies').textContent = String(copies);
-  $('summary').textContent = `${plural(n, 'page')}${copies > 1 ? ` × ${copies} copies` : ''} · ${plural(n * copies, 'sheet')}`;
+  const what = opts.perSheet === 2 ? `${plural(n, 'sheet')} (2 pages each)` : plural(n, 'page');
+  $('summary').textContent = `${what}${copies > 1 ? ` × ${copies} copies` : ''} · ${plural(n * copies, 'sheet')}`;
   $('book').hidden = n < 2;
   /** @type {HTMLButtonElement} */ ($('print')).disabled = n === 0;
 }
@@ -154,13 +161,14 @@ function note(text) {
 
 /** @param {Blob} file */
 export async function prepare(file) {
+  if (file !== current) copies = 1;
+  current = file;
   show('working');
   $('progress').textContent = 'Getting it ready…';
   try {
-    const res = await run(file, (done) => { $('progress').textContent = `Getting it ready… page ${done}`; });
+    const res = await run(file, (done) => { $('progress').textContent = `Getting it ready… page ${done}`; }, opts);
     pages = res.pages;
     skipped.clear();
-    copies = 1;
     $('note').hidden = true;
     const box = $('previews');
     box.querySelectorAll('img').forEach((i) => URL.revokeObjectURL(i.src));
@@ -175,7 +183,7 @@ export async function prepare(file) {
       img.src = await toImageUrl(g);
       const cap = document.createElement('span');
       cap.className = 'cap';
-      cap.textContent = `Page ${n + 1} of ${res.previews.length}`;
+      cap.textContent = `${opts.perSheet === 2 ? 'Sheet' : 'Page'} ${n + 1} of ${res.previews.length}`;
       btn.append(img, cap);
       btn.addEventListener('click', () => {
         skipped.has(n) ? skipped.delete(n) : skipped.add(n);
@@ -206,6 +214,19 @@ export function start() {
   input.addEventListener('change', () => { if (input.files?.[0]) prepare(input.files[0]); });
 
   $('print-hint').hidden = canPrintDirect();
+  /** Show the chosen button in each group as pressed. */
+  const mark = () => {
+    document.querySelectorAll('[data-tone]').forEach((b) => b.setAttribute('aria-pressed', String(Number(/** @type {HTMLElement} */ (b).dataset.tone) === opts.tone)));
+    document.querySelectorAll('[data-per]').forEach((b) => b.setAttribute('aria-pressed', String(Number(/** @type {HTMLElement} */ (b).dataset.per) === opts.perSheet)));
+  };
+  mark();
+  document.querySelectorAll('[data-tone], [data-per]').forEach((b) => b.addEventListener('click', () => {
+    const d = /** @type {HTMLElement} */ (b).dataset;
+    if (d.tone) { opts.tone = Number(d.tone); try { localStorage.setItem(TONE, d.tone); } catch { /* fine */ } }
+    if (d.per) opts.perSheet = d.per === '2' ? 2 : 1;
+    mark();
+    if (current) prepare(current); // previews always show exactly what will print
+  }));
   $('minus').addEventListener('click', () => { copies = Math.max(1, copies - 1); refresh(); });
   $('plus').addEventListener('click', () => { copies = Math.min(20, copies + 1); refresh(); });
   $('print').addEventListener('click', () => output(Array.from({ length: copies }, chosen).flat(), 'inkwell'));
