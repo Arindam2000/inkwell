@@ -23,12 +23,18 @@
     <p class="note" id="note" hidden></p>
     <button id="update" class="big" hidden></button>
     <section data-state="empty">
+      <div class="welcome">
+        <p class="bubble">নমস্কার! আজ কী প্রিন্ট করবো?</p>
+        <div id="hello-dog"></div>
+      </div>
       <button id="scan" class="big" hidden>Scan with camera</button>
       <button id="choose" class="big">Choose photos or PDFs</button>
       <button id="idcard" class="big quiet">ID card (front + back)</button>
       <p class="hint">Or share from Drive → Inkwell</p>
     </section>
-    <section data-state="working" hidden>
+    <section data-state="working" class="loading" hidden>
+      <p class="bubble">একটু অপেক্ষা করুন!</p>
+      <div id="wait-dog"></div>
       <p class="status" id="progress">Getting it ready…</p>
     </section>
     <section data-state="ready" hidden>

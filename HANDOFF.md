@@ -72,3 +72,5 @@
 
 - v0.18.0 memory (src/ui/app.js): 'made' = big previews + saved files (per kind + skipped set), emptied on new pages; 'results' = last 6 prepared results for this file by settings (quality ignored), emptied on a new file. Plus the worker's cleaned-page cache (v0.14).
 
+- v0.19.0: faster opening (auto clean-up skipped on pure-white computer-made PDF pages; next page is read while the worker processes the last). Julee (his Indian Spitz) drawn in src/ui/julee.js: welcome on the start screen ('নমস্কার! আজ কী প্রিন্ট করবো?'), loading ('একটু অপেক্ষা করুন!', a page floats up; new files wait for one full 2.4 s float before opening). More options has a turning arrow.
+

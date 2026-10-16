@@ -58,3 +58,41 @@ h2 { margin: 0; font-size: 22px; }
 
 [data-working] { opacity: 0.6; }
 
+
+/* More options: an arrow that turns when it opens. */
+.more summary { list-style: none; justify-content: space-between; }
+.more summary::-webkit-details-marker { display: none; }
+.more summary::after { content: "▾"; font-size: 22px; transition: transform 0.2s ease; }
+.more[open] summary::after { transform: rotate(180deg); }
+
+/* Julee, the Spitz (src/ui/julee.js). */
+.julee { display: block; width: 100%; max-width: 260px; margin: 0 auto; overflow: visible; }
+.julee .fur, .julee .tail circle, .julee .mane { fill: #fff; stroke: #d6cfbf; stroke-width: 2; }
+.julee .ear-in { fill: #f6c4c4; }
+.julee .dark, .julee .eyes circle { fill: #2a2522; }
+.julee .mouth { fill: none; stroke: #2a2522; stroke-width: 2; stroke-linecap: round; }
+.julee .tongue { fill: #ff8fa3; transform-origin: 100px 101px; animation: pant 0.45s ease-in-out infinite alternate; }
+.julee .shadow { fill: rgb(0 0 0 / 0.08); }
+.julee .tail { transform-origin: 142px 158px; animation: wag 0.5s ease-in-out infinite alternate; }
+.julee .eyes { transform-origin: 100px 78px; animation: blink 4s infinite; }
+.julee .head { transform-origin: 100px 116px; animation: tilt 3.6s ease-in-out infinite; }
+.julee .page rect { fill: #fff; stroke: var(--ink); stroke-width: 2; }
+.julee .page path, .julee .arrow { fill: none; stroke: var(--gold); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.julee .page { animation: upload 2.4s ease-in-out infinite; }
+.julee .arrow { animation: nudge 0.8s ease-in-out infinite alternate; }
+.julee.wait .head { animation: watch 2.4s ease-in-out infinite; }
+.julee.hello { animation: popin 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes pant { from { transform: scaleY(0.75); } to { transform: scaleY(1.08); } }
+@keyframes wag { from { transform: rotate(-9deg); } to { transform: rotate(12deg); } }
+@keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+@keyframes tilt { 0%, 55%, 100% { transform: rotate(0); } 68%, 85% { transform: rotate(-9deg); } }
+@keyframes watch { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(8deg); } }
+@keyframes upload { 0% { transform: translateY(36px); opacity: 0; } 20% { opacity: 1; } 75% { transform: translateY(-22px); opacity: 1; } 100% { transform: translateY(-34px); opacity: 0; } }
+@keyframes nudge { from { transform: translateY(4px); } to { transform: translateY(-4px); } }
+@keyframes popin { from { transform: translateY(40px) scale(0.8); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.bubble { position: relative; width: fit-content; max-width: 100%; margin: 0 auto -6px; padding: 10px 16px; border: 2px solid var(--ink); border-radius: 18px; background: #fff; font-weight: 600; font-size: 19px; text-align: center; animation: popin 0.5s 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.bubble::after { content: ""; position: absolute; left: 34%; bottom: -10px; width: 16px; height: 16px; background: #fff; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(45deg); }
+.loading .status { text-align: center; margin: 0; font-size: 18px; color: var(--muted); }
+.welcome .julee { max-width: 200px; }
+@media (prefers-reduced-motion: reduce) { .julee, .julee *, .bubble { animation: none !important; } }

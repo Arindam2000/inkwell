@@ -83,3 +83,16 @@ test('mini book: 10 pages make 2 sheets (4 sides); page 1 lands bottom-right of 
   expect([dark(0.75, 0.75), dark(0.25, 0.75), dark(0.75, 0.25), dark(0.25, 0.25)]).toEqual([true, false, false, false]);
   expect(m.previews[0].data.every((v) => v > 128)).toBe(true); // the inside has no page 1
 }, 60_000);
+
+test('a computer-made PDF page (pure white paper) skips clean-up; a grey scanned one is still cleaned', async () => {
+  const { prepPage } = await import('../../src/pipeline/pipeline.js');
+  const page = (bg) => {
+    const g = flat(bg, 400, 566);
+    for (let y = 100; y < 110; y++) g.data.fill(20, y * 400 + 50, y * 400 + 350); // a line of "text"
+    return { ...g, dpi: 200 };
+  };
+  const digital = page(255);
+  expect(prepPage(digital, 'auto').data).toBe(digital.data);
+  const scanned = page(225);
+  expect(prepPage(scanned, 'auto').data).not.toBe(scanned.data);
+});

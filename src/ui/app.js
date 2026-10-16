@@ -5,6 +5,7 @@ import { run } from '../pipeline/run.js';
 import { batches, bookOrder, packPages, unpackPages } from '../print/book.js';
 import { canPrintDirect, cleanupUpdate, installUpdate, onSharedFile, printDirect, scanWithCamera, sendFiles } from '../print/direct.js';
 import { shrinkToHeight } from '../image/shrink.js';
+import { julee } from './julee.js';
 
 /** @typedef {import('../image/types.js').Gray} Gray */
 /** @typedef {import('../pipeline/run.js').Page} Page */
@@ -252,6 +253,7 @@ export async function prepare(file, idCard = false) {
   const status = again ? $('summary') : $('progress');
   if (again) $('app').classList.add('busy'); else show('working');
   status.textContent = 'Getting it ready…';
+  const started = performance.now();
   try {
     // Settings tried before on this file (Darker, then back to Normal) come back instantly.
     const key = JSON.stringify({ ...opts, quality: 0 });
@@ -261,6 +263,8 @@ export async function prepare(file, idCard = false) {
       results.set(key, res);
       if (results.size > 6) results.delete(/** @type {string} */ (results.keys().next().value)); // ponytail: oldest out, 6 is plenty for toggling
     }
+    // Julee's page always finishes floating up once (the file kept loading underneath), then the pages open.
+    if (!again) await new Promise((r) => setTimeout(r, Math.max(0, JULEE_MS - (performance.now() - started))));
     forget();
     pages = res.pages;
     skipped.clear();
@@ -308,6 +312,8 @@ export async function prepare(file, idCard = false) {
   }
 }
 let busy = false, redo = false;
+/** One float-up of the page in Julee's loading animation (style.css 'upload'). */
+const JULEE_MS = 2400;
 /** Prepared results for the file on screen, by settings. @type {Map<string, Awaited<ReturnType<typeof run>>>} */
 const results = new Map();
 
@@ -340,6 +346,8 @@ function guard(btn, working, action) {
 };
 
 export function start() {
+  $('hello-dog').append(julee('hello'));
+  $('wait-dog').append(julee('wait'));
   const chrome = /Chrome\/(\d+)/.exec(navigator.userAgent)?.[1] ?? '?';
   $('about').textContent = `Inkwell v${__APP_VERSION__} · Chrome ${chrome}`;
   const input = /** @type {HTMLInputElement} */ ($('file'));

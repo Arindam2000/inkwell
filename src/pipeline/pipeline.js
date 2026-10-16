@@ -48,8 +48,16 @@ function finishPage(g, profile, { tone = 1, size = 'fit', inkSaver = false } = {
  */
 function scan(g, mode) {
   if (mode === 'off') return g;
+  if (mode === 'auto' && !g.photo && alreadyWhite(g)) return g; // a digital PDF page: nothing to clean, skip the slow part
   const page = (g.photo && cropPage(g)) || g;
   return cleanScan(page, { force: mode === 'on' }) ?? g;
+}
+
+/** Most of the page is pure white paper already (made on a computer, not scanned). @param {Gray} g */
+function alreadyWhite(g) {
+  let white = 0, n = 0;
+  for (let i = 0; i < g.data.length; i += 11, n++) if (g.data[i] === 255) white++;
+  return white / n > 0.5;
 }
 
 /** Ink saver: a mostly dark page (dark-mode screenshot) prints as its light version. @param {Gray} g */

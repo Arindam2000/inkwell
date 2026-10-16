@@ -48,7 +48,16 @@ export async function run(file, onProgress, opts = {}) {
       onProgress(++read, null);
     };
     if (reuse) for (let index = 0; index < held.pages; index++) await page({ type: 'again', index }, []);
-    else for (const f of Array.isArray(file) ? file : [file]) for await (const gray of readFile(f)) await page({ type: 'page', gray }, [gray.data.buffer]);
+    else for (const f of Array.isArray(file) ? file : [file]) {
+      // Read the next page while the worker works on this one (two at a time: never more in memory).
+      const pagesIn = readFile(f);
+      let next = pagesIn.next();
+      for (let r = await next; !r.done; r = await next) {
+        next = pagesIn.next();
+        next.catch(() => {}); // if this page fails first, a read error in the next one isn't left unhandled
+        await page({ type: 'page', gray: r.value }, [r.value.data.buffer]);
+      }
+    }
     const done = /** @type {{pdf: Uint8Array, pages: Page[], tonerPct: number, previews: Gray[]}} */ (await ask({ type: 'finish' }, []));
     previews.push(...done.previews);
     held = { file, key, pages: read };
