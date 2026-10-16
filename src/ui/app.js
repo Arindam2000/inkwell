@@ -3,7 +3,7 @@ import { assemblePdf } from '../pdf/writePdf.js';
 import { DPI } from '../pipeline/pipeline.js';
 import { run } from '../pipeline/run.js';
 import { batches, bookOrder, packPages, unpackPages } from '../print/book.js';
-import { canPrintDirect, cleanupUpdate, findPrinters, installUpdate, onSharedFile, printDirect, printWithAndroid, scanWithCamera, sendFiles } from '../print/direct.js';
+import { canPrintDirect, cleanupUpdate, findPrinters, installUpdate, onSharedFile, prefetchUpdate, printDirect, printWithAndroid, scanWithCamera, sendFiles } from '../print/direct.js';
 import { shrinkToHeight } from '../image/shrink.js';
 import { HELLO, WAIT, julee, say } from './julee.js';
 
@@ -443,6 +443,8 @@ export function start() {
   });
   $('fold-test').addEventListener('click', async () => prepare(await numbered(opts.mini || 8)));
   checkUpdate();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); }); // back to the app
+  setInterval(checkUpdate, 30 * 60_000);
 
   $('print-hint').hidden = canPrintDirect();
   $('printer-pick').hidden = !canPrintDirect();
@@ -567,51 +569,82 @@ async function numbered(n) {
   return pics;
 }
 
+/** The version the Update button is working on, so repeat checks don't start it twice. */
+let offered = '';
+let lastCheck = 0;
+
 /**
- * Android app only, quietly on every start: a newer version on GitHub shows an "Update" button.
- * Tapping it downloads the new app inside Inkwell (no Chrome), then Android asks once to install it
- * (it never lets an app update itself silently). The download is deleted on the next start.
+ * Android app only, quietly: on start, whenever Inkwell comes back to the screen, and every 30 minutes.
+ * A newer version on GitHub is downloaded in the background right away, so by the time it's tapped,
+ * Android's installer opens at once (Android never lets an app update itself silently).
  */
 async function checkUpdate() {
-  if (!canPrintDirect()) return; // the website updates by itself
+  if (!canPrintDirect() || Date.now() - lastCheck < 60_000) return; // the website updates by itself
+  lastCheck = Date.now();
   try {
-    const rel = await (await fetch('https://api.github.com/repos/Arindam2000/inkwell/releases/latest')).json();
+    const rel = await (await fetch('https://api.github.com/repos/Arindam2000/inkwell/releases/latest', { cache: 'no-store' })).json();
     const latest = /v(\d+\.\d+\.\d+)/.exec(rel.name ?? '')?.[1];
     if (!latest || !newer(latest, __APP_VERSION__)) { cleanupUpdate(); return; } // up to date: the old download can go
-    showUpdate(/** @type {HTMLButtonElement} */ ($('update')), latest, (p) => installUpdate(latest, p));
+    if (latest === offered) return;
+    offered = latest;
+    showUpdate(/** @type {HTMLButtonElement} */ ($('update')), latest, {
+      fetch: (p) => prefetchUpdate(latest, p),
+      install: () => installUpdate(latest, () => {}),
+    });
   } catch { /* offline: try next time */ }
 }
 
 /**
- * The Update button: the bar starts moving the moment it's tapped, fills with the download, then Android's
- * installer opens. If Android first wants "Allow from this source", the download is kept, so the next tap
- * goes straight to installing. @param {HTMLButtonElement} b @param {string} latest
- * @param {(onProgress: (pct: number) => void) => Promise<{needsPermission?: boolean}>} install
+ * The Update button, step by step, always saying what's happening:
+ * "Connecting…" (reaching GitHub's file server takes a few seconds), "Getting v… 42%" with the bar
+ * filling, then "Update ready: tap to install". Tapping early just means it installs the moment it's ready.
+ * If Android first wants "Allow from this source", the download is kept for the next tap.
+ * @param {HTMLButtonElement} b @param {string} latest
+ * @param {{fetch: (onProgress: (pct: number) => void) => Promise<unknown>, install: () => Promise<{needsPermission?: boolean}>}} steps
  */
-export function showUpdate(b, latest, install) {
-  const ready = `Update to v${latest}`;
-  b.textContent = ready;
-  b.hidden = false;
-  b.addEventListener('click', async () => {
-    if (b.classList.contains('loading')) return;
-    b.classList.add('loading');
-    b.style.setProperty('--pct', '0%');
-    b.textContent = 'Downloading…';
+export function showUpdate(b, latest, steps) {
+  let state = 'getting'; // getting → ready → (installing) ; failed → getting again on tap
+  let installWhenReady = false;
+  const set = (/** @type {string} */ text, /** @type {number | null} */ pct) => {
+    b.textContent = text;
+    b.classList.toggle('loading', pct !== null);
+    b.classList.toggle('ready', state === 'ready');
+    b.style.setProperty('--pct', `${pct ?? 0}%`);
+  };
+  const install = async () => {
+    state = 'installing';
+    set('Opening installer…', null);
     try {
-      const res = await install((pct) => {
-        if (pct < 0) return;
-        b.style.setProperty('--pct', `${pct}%`);
-        b.textContent = `Downloading… ${pct}%`;
-      });
-      b.textContent = res.needsPermission ? `Allow, then tap again: v${latest}` : 'Installing…';
-      if (res.needsPermission) note('Android asks once: turn on "Allow from this source" for Inkwell, come back, and tap Update again. The download is kept.');
-      else setTimeout(() => { b.textContent = ready; }, 4000); // if the installer was closed, the button works again
+      const res = await steps.install();
+      if (res.needsPermission) note('Android asks once: turn on "Allow from this source" for Inkwell, come back, and tap Update again. The update is already downloaded.');
     } catch {
-      b.textContent = ready;
-      note("Couldn't download the update. Check the Wi-Fi and tap Update again.");
+      note("Couldn't open the installer. Tap Update again.");
     }
-    b.classList.remove('loading');
-  });
+    state = 'ready';
+    set(`Update ready: v${latest} · tap to install`, null);
+  };
+  const get = async () => {
+    state = 'getting';
+    set(installWhenReady ? 'Connecting… (installs when ready)' : `New version v${latest} · connecting…`, 0);
+    try {
+      await steps.fetch((pct) => {
+        if (pct >= 0 && state === 'getting') set(`${installWhenReady ? 'Downloading' : `Getting v${latest}`}… ${pct}%`, pct);
+      });
+      state = 'ready';
+      set(`Update ready: v${latest} · tap to install`, null);
+      if (installWhenReady) install();
+    } catch {
+      state = 'failed';
+      set(`Update to v${latest} · tap to download`, null);
+    }
+  };
+  b.hidden = false;
+  b.onclick = () => {
+    if (state === 'ready') install();
+    else if (state === 'failed') { installWhenReady = true; get(); }
+    else if (state === 'getting' && !installWhenReady) { installWhenReady = true; b.textContent = b.textContent.replace(`Getting v${latest}`, 'Downloading').replace(`New version v${latest} · connecting…`, 'Connecting… (installs when ready)'); }
+  };
+  get();
 }
 
 /** @param {string} a @param {string} b */

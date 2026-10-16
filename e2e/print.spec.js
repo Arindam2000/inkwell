@@ -241,28 +241,42 @@ test('big preview is never blank: it shows the small picture at once, even after
   expect(shown).toBe(true);
 });
 
-test('Update button: moving bar and "Downloading…" the moment it is tapped, then the percent fills in', async ({ page }) => {
+test('Update: fetched in the background with clear stages; tap installs at once when ready, or as soon as it is', async ({ page }) => {
   await page.goto('./');
   const steps = await page.evaluate(async () => {
     const { showUpdate } = await import('/inkwell/src/ui/app.js');
     const b = document.getElementById('update');
+    const tick = () => new Promise((r) => setTimeout(r, 0));
     /** @type {(pct: number) => void} */ let report = () => {};
-    let finish = () => {};
-    showUpdate(b, '9.9.9', (onProgress) => { report = onProgress; return new Promise((r) => { finish = () => r({}); }); });
-    const seen = [b.textContent];
-    b.click();
-    seen.push(`${b.textContent}|${b.classList.contains('loading')}`);
+    let done = () => {};
+    let installs = 0;
+    showUpdate(b, '9.9.9', {
+      fetch: (onProgress) => { report = onProgress; return new Promise((r) => { done = () => r(undefined); }); },
+      install: async () => { installs++; return {}; },
+    });
+    const seen = [`${b.textContent}|${b.classList.contains('loading')}`];
     report(40);
     seen.push(`${b.textContent}|${b.style.getPropertyValue('--pct')}`);
-    b.click(); // an impatient second tap does nothing
-    finish();
-    await new Promise((r) => setTimeout(r, 0));
+    done();
+    await tick();
+    seen.push(`${b.textContent}|${b.classList.contains('ready')}|${installs}`);
+    b.click();
+    await tick(); await tick();
+    seen.push(`installs ${installs}`);
+    // tapped while still downloading: installs by itself when the download finishes
+    showUpdate(b, '9.9.10', { fetch: () => new Promise((r) => { done = () => r(undefined); }), install: async () => { installs++; return {}; } });
+    b.click();
     seen.push(b.textContent);
+    done();
+    await tick(); await tick();
+    seen.push(`installs ${installs}`);
     return seen;
   });
-  expect(steps).toEqual(['Update to v9.9.9', 'Downloading…|true', 'Downloading… 40%|40%', 'Installing…']);
+  expect(steps).toEqual([
+    'New version v9.9.9 · connecting…|true', 'Getting v9.9.9… 40%|40%', 'Update ready: v9.9.9 · tap to install|true|0', 'installs 1',
+    'Connecting… (installs when ready)', 'installs 2',
+  ]);
 });
-
 test('printer picker: lists the printers found, remembers the choice; one printer is picked by itself; none offers Android', async ({ page }) => {
   await page.goto('./');
   const r = await page.evaluate(async () => {

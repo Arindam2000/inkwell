@@ -125,5 +125,11 @@ export async function installUpdate(version, onProgress) {
   try { return await Update.install({ url: APK, version }); } finally { listener.remove(); }
 }
 
+/** Download a new version in the background (no installer yet), with progress. @param {string} version @param {(pct: number) => void} onProgress */
+export async function prefetchUpdate(version, onProgress) {
+  const listener = await Update.addListener('progress', (/** @type {{pct: number}} */ e) => onProgress(e.pct));
+  try { await Update.prefetch({ url: APK, version }); } finally { listener.remove(); }
+}
+
 /** Delete a downloaded update (it's installed by now, or was cancelled). */
 export const cleanupUpdate = () => Update.cleanup().catch(() => {});

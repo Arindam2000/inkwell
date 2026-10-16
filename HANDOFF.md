@@ -85,3 +85,5 @@
 
 - v0.24.0: printer picker (app.js pickPrinter/search; localStorage 'inkwell-printer' = {name, host}, old plain-host value still read). 'Printer: … ▾' row on Ready (app only). 'Print with Android' = IppPlugin.systemPrint (PrintManager + PDF adapter), remembered as host 'android'. One printer found = chosen without asking.
 
+- v0.24.1 was a no-change test release. v0.25.0: update check on start + whenever the app comes back to the screen + every 30 min (1-min throttle). New version is prefetched in the background (UpdatePlugin.prefetch; synchronized ensure() so a tap during prefetch waits instead of downloading twice); button stages Connecting… / Getting v… N% / Update ready · tap to install; tap during download = install when ready.
+

@@ -51,9 +51,8 @@ public class UpdatePlugin extends Plugin {
                 File d = dir();
                 //noinspection ResultOfMethodCallIgnored
                 d.mkdirs();
-                String version = call.getString("version", "latest").replaceAll("[^0-9.]", "");
-                File apk = new File(d, "inkwell-" + version + ".apk"); // named by version: an older kept download is never installed
-                if (!apk.exists()) download(url, d, apk);
+                File apk = apkFor(call);
+                ensure(url, d, apk);
                 if (Build.VERSION.SDK_INT >= 26 && !getContext().getPackageManager().canRequestPackageInstalls()) {
             // One time only: Android's "Install unknown apps" switch for Inkwell.
             Intent allow = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getContext().getPackageName()));
@@ -73,6 +72,34 @@ public class UpdatePlugin extends Plugin {
                 call.reject("Download failed");
             }
         }).start();
+    }
+
+    /** Download {url} in the background (no installer), with "progress" events {pct}; resolves when it's on the phone. */
+    @PluginMethod
+    public void prefetch(PluginCall call) {
+        String url = call.getString("url");
+        if (url == null || !url.startsWith("https://github.com/Arindam2000/inkwell/")) { call.reject("Bad update link"); return; }
+        new Thread(() -> {
+            try {
+                File d = dir();
+                //noinspection ResultOfMethodCallIgnored
+                d.mkdirs();
+                ensure(url, d, apkFor(call));
+                call.resolve(new JSObject());
+            } catch (Exception e) {
+                call.reject("Download failed");
+            }
+        }).start();
+    }
+
+    private File apkFor(PluginCall call) {
+        String version = call.getString("version", "latest").replaceAll("[^0-9.]", "");
+        return new File(dir(), "inkwell-" + version + ".apk"); // named by version: an older kept download is never installed
+    }
+
+    /** One download at a time: a tap during the background download waits for it instead of starting another. */
+    private synchronized void ensure(String url, File d, File apk) throws Exception {
+        if (!apk.exists()) download(url, d, apk);
     }
 
     /** Fetch into a .part file and rename when complete, so a half download is never installed. */
