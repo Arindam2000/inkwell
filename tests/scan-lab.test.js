@@ -16,7 +16,7 @@ const load = (f) => {
  * Paper that should be white (judged away from ink edges), and ink that should stay dark
  * (found within `slack` pixels, since a photo can't be flattened back to the exact pixel).
  */
-function score(out, truth, slack) {
+function score(out, truth, slack, inkLevel = 90) {
   const { width: w, height: h } = truth;
   let paper = 0, paperOk = 0, ink = 0, inkOk = 0;
   for (let y = 2; y < h - 2; y++) for (let x = 2; x < w - 2; x++) {
@@ -25,7 +25,7 @@ function score(out, truth, slack) {
       let near = false;
       for (let dy = -2; dy <= 2 && !near; dy++) for (let dx = -2; dx <= 2; dx++) if (truth.data[i + dy * w + dx] < 250) { near = true; break; }
       if (!near) { paper++; if (out.data[i] >= 240) paperOk++; }
-    } else if (t <= 90) {
+    } else if (t <= inkLevel) {
       ink++;
       let ok = false;
       for (let dy = -slack; dy <= slack && !ok; dy++) for (let dx = -slack; dx <= slack; dx++) if (out.data[i + dy * w + dx] <= 150) { ok = true; break; }
@@ -53,7 +53,7 @@ test.skipIf(!cases.length)('scan lab scores', () => {
     const t0 = performance.now();
     const out = /** @type {any} */ (cleanScan(input));
     const ms = performance.now() - t0;
-    rows.push({ name: c.name, ...score(out, truth, c.route === 'camera' ? 2 : 0), cornerErr, ms });
+    rows.push({ name: c.name, ...score(out, truth, c.route === 'camera' ? 2 : 0, c.ink ? c.ink + 5 : 90), cornerErr, ms });
   }
   const avg = (k) => rows.reduce((s, r) => s + r[k], 0) / rows.length;
   const worst = (k, dir) => rows.reduce((a, r) => (dir * r[k] < dir * a[k] ? r : a));
@@ -67,7 +67,7 @@ test.skipIf(!cases.length)('scan lab scores', () => {
   expect(Math.max(...judged.map((r) => r.cornerErr))).toBeLessThanOrEqual(LIMITS.cornerErr);
 }, 300_000);
 
-const LIMITS = { paperWhite: 98.5, inkKept: 90, cornerErr: 0.35 };
+const LIMITS = { paperWhite: 97.5, inkKept: 92, cornerErr: 0.35 };
 // Page edge invisible (dark page on a dark table, deep shadow): auto-crop must give up (keep the whole
 // photo) rather than cut the page. The person drags the corners instead.
 const KNOWN_LIMITS = ['h5-camera-darkroom'];

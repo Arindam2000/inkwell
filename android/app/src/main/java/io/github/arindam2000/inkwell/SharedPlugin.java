@@ -6,6 +6,9 @@ import android.net.Uri;
 import android.provider.OpenableColumns;
 import android.util.Base64;
 
+import androidx.core.content.FileProvider;
+
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -13,9 +16,12 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.ArrayList;
 import java.io.InputStream;
 
-/** A photo or PDF shared to Inkwell from Drive, WhatsApp or Files (Android's Share menu). */
+/** Files in and out of Inkwell through Android's Share menu: receive a photo/PDF, or save/send Inkwell's result. */
 @CapacitorPlugin(name = "Shared")
 public class SharedPlugin extends Plugin {
 
@@ -38,6 +44,35 @@ public class SharedPlugin extends Plugin {
             call.resolve(ret);
         } catch (Exception e) {
             call.reject("Can't open the shared file");
+        }
+    }
+
+    /** Hand files to Android's Share menu, so they can be saved to Drive or Files, or sent. files: [{name, type, data base64}] */
+    @PluginMethod
+    public void send(PluginCall call) {
+        try {
+            JSArray files = call.getArray("files");
+            ArrayList<Uri> uris = new ArrayList<>();
+            String type = "*/*";
+            File dir = new File(getContext().getCacheDir(), "out");
+            //noinspection ResultOfMethodCallIgnored
+            dir.mkdirs();
+            for (int i = 0; i < files.length(); i++) {
+                org.json.JSONObject f = files.getJSONObject(i);
+                File out = new File(dir, f.getString("name").replaceAll("[^A-Za-z0-9._-]", "_"));
+                try (FileOutputStream o = new FileOutputStream(out)) { o.write(Base64.decode(f.getString("data"), Base64.DEFAULT)); }
+                uris.add(FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", out));
+                type = f.getString("type");
+            }
+            Intent send = new Intent(uris.size() == 1 ? Intent.ACTION_SEND : Intent.ACTION_SEND_MULTIPLE);
+            send.setType(type);
+            if (uris.size() == 1) send.putExtra(Intent.EXTRA_STREAM, uris.get(0));
+            else send.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
+            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            getActivity().startActivity(Intent.createChooser(send, "Save or send"));
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Can't share the file");
         }
     }
 

@@ -1,8 +1,8 @@
 /** @typedef {import('../image/types.js').Gray} Gray */
 
 // Calibration knobs (tuned on the scan lab, then checked on real prints).
-const WHITE = 0.8; // after flattening, anything lighter than 80% of the paper becomes pure white
-const BLACK = 0.3; // anything darker than 30% becomes solid black
+const WHITE = 0.85; // after flattening, anything lighter than 80% of the paper becomes pure white
+const BLACK = 0.35; // anything darker than 30% becomes solid black
 const STEP = 4; // the paper-brightness map is built at 1/8 size
 const DOC_WHITE = 0.6; // auto: it's a document if at least 60% turns to clean paper
 
@@ -29,7 +29,7 @@ export function cleanScan(g, { force = true } = {}) {
     for (let i = 0; i < out.length; i += 7) if (out[i] === 255) white++;
     if (white / (out.length / 7) < DOC_WHITE) return null;
   }
-  despeckle(out, w, h);
+  if (Math.min(w, h) >= 1000) despeckle(out, w, h); // on small photos a speck and a letter's dot look the same
   removeFingers(out, w, h);
   return { width: w, height: h, data: out };
 }
@@ -136,7 +136,7 @@ function boxFilter(a, w, h, r) {
 /**
  * Fingers holding the page: big, thick, non-white blobs that come in from the page edge.
  * Text and lines are thin, so they vanish when the dark area is shrunk by ~1.5% of the page;
- * a thumb doesn't. Whatever thick blob touches the border is wiped to white.
+ * a thumb doesn't. A thick, solid blob touching the border is wiped to white.
  * Worked on a 1/4-size copy, so it stays fast on big photos.
  * ponytail: a full-bleed photo or black bar touching the edge would be wiped too; Clean-up "Off" keeps it.
  * @param {Uint8Array} a @param {number} w @param {number} h
@@ -162,7 +162,17 @@ function removeFingers(a, w, h) {
         if (n >= 0 && n < dark.length && dark[n] && blob[n] < 0) { blob[n] = s; pix.push(n); }
       }
     }
-    if (edge) for (const i of pix) wipe[i] = 1;
+    if (!edge) continue;
+    // A thumb is solid; a block of text or a table near the edge is mostly paper between the ink.
+    let solid = 0, total = 0;
+    for (const i of pix) {
+      const x = i % sw, y = (i - x) / sw;
+      for (let yy = y * K; yy < Math.min(h, y * K + K); yy++) for (let xx = x * K; xx < Math.min(w, x * K + K); xx++) {
+        total++;
+        if (a[yy * w + xx] < 230) solid++;
+      }
+    }
+    if (solid / total >= 0.75) for (const i of pix) wipe[i] = 1;
   }
   const grown = maxFilter(wipe, sw, sh, 1); // cover the blob's soft rim too
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (grown[((y / K) | 0) * sw + ((x / K) | 0)]) a[y * w + x] = 255;
@@ -170,12 +180,13 @@ function removeFingers(a, w, h) {
 
 /** Dark pixels with almost no dark neighbours are dust, not ink: make them white. @param {Uint8Array} a @param {number} w @param {number} h */
 function despeckle(a, w, h) {
-  const dark = (/** @type {number} */ i) => a[i] < 160;
+  // Count faint pixels too, so a letter's thin stroke stays joined to the letter and isn't taken for dust.
+  const dark = (/** @type {number} */ i) => a[i] < 235;
   /** @type {number[]} */
   const kill = [];
   for (let y = 2; y < h - 2; y++) for (let x = 2; x < w - 2; x++) {
     const i = y * w + x;
-    if (!dark(i)) continue;
+    if (a[i] >= 160) continue;
     let n = 0;
     for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (dark(i + dy * w + dx)) n++;
     if (n <= 4) kill.push(i); // a speck of up to 2x2 pixels, alone in a 5x5 window

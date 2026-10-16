@@ -37,6 +37,14 @@ export async function scanWithCamera(pages = 30) {
 const Shared = registerPlugin('Shared');
 
 /**
+ * Android app only: give files to Android's Share menu (save to Drive/Files, or send).
+ * @param {{name: string, type: string, bytes: Uint8Array}[]} files
+ */
+export async function sendFiles(files) {
+  await Shared.send({ files: files.map((f) => ({ name: f.name, type: f.type, data: toB64(f.bytes) })) });
+}
+
+/**
  * Hand each file shared to the Android app to `open`: the one it was opened with, and any shared while it runs.
  * @param {(file: Blob) => unknown} open @returns {Promise<boolean>} true if it was opened with a file
  */

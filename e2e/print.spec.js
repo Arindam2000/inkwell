@@ -99,3 +99,21 @@ test('ID card: two pages become one sheet', async ({ page }) => {
   await expect(page.locator('img.preview')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator('#summary')).toHaveText('1 page · 1 sheet');
 });
+
+test('tap a page: big preview, skip from there; save as PDF and as image', async ({ page }) => {
+  await open2(page);
+  await page.getByRole('button', { name: 'See page 2 of 2 big' }).click();
+  await expect(page.getByText('Page 2 of 2', { exact: true }).last()).toBeVisible();
+  await expect(page.locator('#viewer-img')).toHaveAttribute('src', /^blob:/);
+  await page.getByRole('button', { name: 'Skip this page' }).click();
+  await expect(page.getByRole('button', { name: 'Print this page' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close' }).click();
+  await expect(page.locator('#summary')).toHaveText('1 page · 1 sheet');
+
+  const pdf = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Save as PDF' }).click();
+  expect((await pdf).suggestedFilename()).toBe('inkwell.pdf');
+  const jpg = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Save as image' }).click();
+  expect((await jpg).suggestedFilename()).toBe('inkwell-1.jpg');
+});

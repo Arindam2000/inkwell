@@ -28,11 +28,21 @@ h2 { margin: 0; font-size: 22px; }
 #copies { min-width: 2ch; text-align: center; font-size: 20px; font-weight: 600; }
 .step { min-width: 48px; min-height: 48px; border-radius: 12px; border: 2px solid var(--ink); background: none; color: var(--ink); font: 600 22px/1 system-ui, sans-serif; }
 .page { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; text-align: center; }
-.page[aria-pressed="false"] .preview { opacity: 0.25; }
-.page[aria-pressed="false"] .cap::after { content: " · Skipped"; color: var(--gold); font-weight: 600; }
 .cap { font-size: 15px; color: var(--muted); }
 .batch { margin: 0; font-weight: 600; color: var(--gold); }
 .choice { display: flex; align-items: center; gap: 6px; }
 .choice span { flex: 1; }
 .choice button { min-height: 48px; padding: 0 12px; border-radius: 12px; border: 2px solid var(--line); background: none; color: var(--ink); font: inherit; font-size: 16px; }
 .choice button[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper); font-weight: 600; }
+.pair { display: flex; gap: 10px; }
+.pair .big { font-size: 16px; padding: 0 10px; }
+.open { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; display: flex; flex-direction: column; gap: 6px; text-align: left; }
+.pill { position: absolute; top: 8px; right: 8px; min-width: 48px; min-height: 48px; border-radius: 24px; border: 2px solid var(--ink); background: var(--ink); color: var(--paper); font: 700 18px/1 system-ui, sans-serif; }
+.pill[aria-pressed="false"] { background: var(--paper); color: var(--gold); border-color: var(--gold); }
+.page:has(.pill[aria-pressed="false"]) .preview { opacity: 0.25; }
+.page:has(.pill[aria-pressed="false"]) .cap::after { content: " · Skipped"; color: var(--gold); font-weight: 600; }
+.viewer { position: fixed; inset: 0; z-index: 10; background: var(--paper); display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 16px; }
+.viewer-cap { margin: 0; font-weight: 600; text-align: center; }
+#viewer-img { flex: 1; min-height: 0; width: 100%; object-fit: contain; background: #fff; border: 1px solid var(--line); }
+.viewer-bar { display: flex; gap: 10px; align-items: center; }
+.viewer-bar .big { flex: 1; }

@@ -3,7 +3,8 @@ import { assemblePdf } from '../pdf/writePdf.js';
 import { DPI } from '../pipeline/pipeline.js';
 import { run } from '../pipeline/run.js';
 import { batches, bookOrder, packPages, unpackPages } from '../print/book.js';
-import { canPrintDirect, onSharedFile, printDirect, scanWithCamera } from '../print/direct.js';
+import { canPrintDirect, onSharedFile, printDirect, scanWithCamera, sendFiles } from '../print/direct.js';
+import { shrinkToHeight } from '../image/shrink.js';
 
 /** @typedef {import('../image/types.js').Gray} Gray */
 /** @typedef {import('../pipeline/run.js').Page} Page */
@@ -17,8 +18,8 @@ function show(state) {
   });
 }
 
-/** @param {Gray} g @returns {Promise<string>} */
-async function toImageUrl(g) {
+/** @param {Gray} g @param {string} [type] @returns {Promise<Blob>} */
+async function toImage(g, type = 'image/png') {
   const c = new OffscreenCanvas(g.width, g.height);
   const ctx = /** @type {OffscreenCanvasRenderingContext2D} */ (c.getContext('2d'));
   const img = ctx.createImageData(g.width, g.height);
@@ -27,8 +28,11 @@ async function toImageUrl(g) {
     img.data.set([v, v, v, 255], i * 4);
   }
   ctx.putImageData(img, 0, 0);
-  return URL.createObjectURL(await c.convertToBlob({ type: 'image/png' }));
+  return c.convertToBlob({ type, quality: 0.92 });
 }
+
+/** @param {Gray} g @returns {Promise<string>} */
+const toImageUrl = async (g) => URL.createObjectURL(await toImage(g));
 
 /** The latest prepared pages (already compressed), ready for printing. */
 let pages = /** @type {Page[]} */ ([]);
@@ -159,6 +163,56 @@ function note(text) {
   $('note').hidden = false;
 }
 
+/** Skip or keep page n, and show it everywhere. @param {number} n */
+function toggle(n) {
+  skipped.has(n) ? skipped.delete(n) : skipped.add(n);
+  document.querySelectorAll('#previews .pill')[n]?.setAttribute('aria-pressed', String(!skipped.has(n)));
+  if (!$('viewer').hidden) view(n);
+  refresh();
+}
+
+/** Unpack one prepared page back to pixels. @param {Page} p @returns {Promise<Gray>} */
+async function pixels(p) {
+  const stream = new Blob([/** @type {BlobPart} */ (p.bytes)]).stream().pipeThrough(new DecompressionStream('deflate'));
+  return { width: p.width, height: p.height, data: new Uint8Array(await new Response(stream).arrayBuffer()) };
+}
+
+let viewing = 0;
+/** Full-screen preview of page n: exactly what will print. @param {number} n */
+async function view(n) {
+  viewing = (n + pages.length) % pages.length;
+  const shown = viewing;
+  $('viewer').hidden = false;
+  $('viewer-cap').textContent = `Page ${shown + 1} of ${pages.length}${skipped.has(shown) ? ' · Skipped' : ''}`;
+  $('v-skip').textContent = skipped.has(shown) ? 'Print this page' : 'Skip this page';
+  const img = /** @type {HTMLImageElement} */ ($('viewer-img'));
+  const url = await toImageUrl(shrinkToHeight(await pixels(pages[shown]), 1600));
+  if (shown !== viewing) return URL.revokeObjectURL(url); // the person already moved on
+  if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+  img.src = url;
+}
+
+/**
+ * Save the pages that will print, as one PDF or as JPEG pictures: through the Share menu (to Drive,
+ * Files, WhatsApp) in the Android app, as downloads in Chrome. @param {'pdf'|'jpg'} kind
+ */
+async function save(kind) {
+  const list = chosen();
+  /** @type {{name: string, type: string, bytes: Uint8Array}[]} */
+  const files = [];
+  if (kind === 'pdf') files.push({ name: 'inkwell.pdf', type: 'application/pdf', bytes: assemblePdf(list, DPI) });
+  else for (const [i, p] of list.entries()) {
+    const jpg = await toImage(await pixels(p), 'image/jpeg');
+    files.push({ name: `inkwell-${i + 1}.jpg`, type: 'image/jpeg', bytes: new Uint8Array(await jpg.arrayBuffer()) });
+  }
+  if (canPrintDirect()) return sendFiles(files);
+  for (const f of files) {
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([/** @type {BlobPart} */ (f.bytes)], { type: f.type })), download: f.name });
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60_000);
+  }
+}
+
 /** @param {Blob | Blob[]} file @param {boolean} [idCard] front + back of a card, on one sheet */
 export async function prepare(file, idCard = false) {
   if (file !== current) copies = 1;
@@ -175,23 +229,29 @@ export async function prepare(file, idCard = false) {
     box.querySelectorAll('img').forEach((i) => URL.revokeObjectURL(i.src));
     box.replaceChildren();
     for (const [n, g] of res.previews.entries()) {
-      const btn = document.createElement('button');
-      btn.className = 'page';
-      btn.setAttribute('aria-pressed', 'true');
+      const label = `${opts.perSheet === 2 ? 'Sheet' : 'Page'} ${n + 1} of ${res.previews.length}`;
+      const fig = document.createElement('div');
+      fig.className = 'page';
+      const open = document.createElement('button');
+      open.className = 'open';
+      open.setAttribute('aria-label', `See ${label.toLowerCase()} big`);
       const img = document.createElement('img');
       img.className = 'preview';
       img.alt = '';
       img.src = await toImageUrl(g);
       const cap = document.createElement('span');
       cap.className = 'cap';
-      cap.textContent = `${opts.perSheet === 2 ? 'Sheet' : 'Page'} ${n + 1} of ${res.previews.length}`;
-      btn.append(img, cap);
-      btn.addEventListener('click', () => {
-        skipped.has(n) ? skipped.delete(n) : skipped.add(n);
-        btn.setAttribute('aria-pressed', String(!skipped.has(n)));
-        refresh();
-      });
-      box.append(btn);
+      cap.textContent = label;
+      open.append(img, cap);
+      open.addEventListener('click', () => view(n));
+      const pill = document.createElement('button');
+      pill.className = 'pill';
+      pill.textContent = '✓';
+      pill.setAttribute('aria-label', label);
+      pill.setAttribute('aria-pressed', 'true');
+      pill.addEventListener('click', () => toggle(n));
+      fig.append(open, pill);
+      box.append(fig);
     }
     refresh();
     $('toner').textContent = `Toner: ${Math.round(res.tonerPct)}%`;
@@ -215,6 +275,12 @@ export function start() {
   input.addEventListener('change', () => { if (input.files?.[0]) prepare(input.files[0]); });
 
   $('print-hint').hidden = canPrintDirect();
+  $('save-pdf').addEventListener('click', () => save('pdf'));
+  $('save-img').addEventListener('click', () => save('jpg'));
+  $('v-close').addEventListener('click', () => { $('viewer').hidden = true; });
+  $('v-prev').addEventListener('click', () => view(viewing - 1));
+  $('v-next').addEventListener('click', () => view(viewing + 1));
+  $('v-skip').addEventListener('click', () => toggle(viewing));
   $('scan').hidden = !canPrintDirect();
   const idInput = /** @type {HTMLInputElement} */ ($('id-files'));
   $('idcard').addEventListener('click', async () => {

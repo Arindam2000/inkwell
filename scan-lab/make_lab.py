@@ -173,6 +173,10 @@ if __name__ == "__main__":
         ("finger", "gallery", dict(st=0.1, light=0.2, finger=True), "plain"),
         ("finger2", "camera", dict(st=0.1, light=0.2, finger=True), "letter"),
         ("finger3", "drive", dict(st=0.0, light=0.1, finger=True), "table"),
+        ("faded", "drive", dict(st=0.0, light=0.1, ink=150), "bill"),
+        ("gray-text", "gallery", dict(st=0.0, light=0.25, ink=120), "plain"),
+        ("lowres", "gallery", dict(st=0.05, light=0.2, scale=0.45), "plain"),
+        ("narrow-margin", "gallery", dict(st=0.0, light=0.15, crop=70), "table"),
     ]
     for j, (tag, route, o, kind) in enumerate(hard):
         rng = random.Random(5000 + j)
@@ -180,6 +184,9 @@ if __name__ == "__main__":
         if o.get("pencil"):  # light pencil-like ink: must still print
             a = np.asarray(rgb, dtype=np.float64); a = np.where(a < 128, 85, a)
             rgb = Image.fromarray(a.astype(np.uint8)); truth = rgb.convert("L")
+        if o.get("ink"):  # faded receipt / grey print: real text, just light
+            a = np.asarray(rgb, dtype=np.float64); a = np.where(a < 128, o["ink"], a)
+            rgb = Image.fromarray(a.astype(np.uint8))
         if o.get("finger"):
             rgb = finger(rgb, rng)
         img = degrade(rgb, rng, o["st"], o["light"], (238, 234, 222))
@@ -189,9 +196,14 @@ if __name__ == "__main__":
         if route == "camera":
             img, corners = on_table(img, rng, o.get("table"))
             (OUT / f"{name}.corners.json").write_text(json.dumps(corners))
+        if o.get("crop"):  # photo cropped tight: text right at the edge
+            c = o["crop"]; img = img.crop((c, c, W - c, H - c)); truth = truth.crop((c, c, W - c, H - c))
+        if o.get("scale"):  # small, blurry photo (old phone, WhatsApp-compressed)
+            sz = (int(img.width * o["scale"]), int(img.height * o["scale"]))
+            img = img.resize(sz, Image.BILINEAR); truth = truth.resize(sz, Image.NEAREST)
         save(f"{name}.in.gz", img)
         save(f"{name}.truth.gz", truth)
-        cases.append({"name": name, "route": route, "kind": kind, "showThrough": o["st"], "light": o["light"]})
+        cases.append({"name": name, "route": route, "kind": kind, "showThrough": o["st"], "light": o["light"], "ink": o.get("ink", 0)})
         img.convert("RGB").resize((img.width // 4, img.height // 4)).save(OUT.parent / f"peek-{name}.png")
     (OUT / "cases.json").write_text(json.dumps(cases, indent=1))
     print(len(cases), "cases")

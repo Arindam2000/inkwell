@@ -55,8 +55,12 @@
       </div>
       <button id="print" class="big">Print</button>
       <button id="book" class="big quiet">Print as a book (both sides)</button>
+      <div class="pair">
+        <button id="save-pdf" class="big quiet">Save as PDF</button>
+        <button id="save-img" class="big quiet">Save as image</button>
+      </div>
       <p class="hint" id="print-hint">Pick your print app, then set scale to 100% (Actual size).</p>
-      <p class="hint">Tap a page to skip it.</p>
+      <p class="hint">Tap a page to see it big. Tap ✓ to skip it.</p>
       <div id="previews"></div>
       <button id="again" class="big quiet">Choose another file</button>
     </section>
@@ -95,6 +99,16 @@
       <button id="retry" class="big">Try another file</button>
     </section>
   </main>
+  <div id="viewer" class="viewer" hidden>
+    <p class="viewer-cap" id="viewer-cap"></p>
+    <img id="viewer-img" alt="">
+    <div class="viewer-bar">
+      <button id="v-prev" class="step" aria-label="Previous page">‹</button>
+      <button id="v-skip" class="big quiet"></button>
+      <button id="v-next" class="step" aria-label="Next page">›</button>
+    </div>
+    <button id="v-close" class="big">Close</button>
+  </div>
   <footer><p id="about"></p></footer>
   <input id="file" type="file" accept="image/*,application/pdf" hidden>
   <input id="id-files" type="file" accept="image/*,application/pdf" multiple hidden>
