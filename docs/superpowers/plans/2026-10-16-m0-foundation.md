@@ -13,6 +13,18 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-16-inkwell-design.md` (sections 3, 4, 5, 6.1, 6.2, 8)
 
+## Win chunks (run in this order; each ends with something Arindam can SEE on his phone)
+
+| Win | What you see | Tasks | Scorecard |
+|---|---|---|---|
+| **W1** | Inkwell icon on your phone, opens an empty screen | 1 + deploy part of 9 + install part of 8 (manifest, icons) | 3 pts |
+| **W2** | Pick a file → A4 preview + "Toner: X%" | 2, 3, 5, 6, 7 | 3 pts |
+| **W3** | Print button → true-size print | 4 (needs spike 03), print route (needs spike 04) | 3 pts |
+| **W4** | Drive → Share → Inkwell | 8 (share target) | 3 pts |
+| **W5** | Works with Wi-Fi off | 8 (service worker) | 3 pts |
+
+Spikes 03/04 run alongside W1–W2; their results are only needed from W3. Each win = tests green → deploy → phone check → save-point → scorecard updated.
+
 ## Global Constraints
 
 - English only. Plain-language messages, no jargon in the UI.
