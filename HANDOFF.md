@@ -60,3 +60,7 @@
 - Setting changes are fast: the worker stays alive and keeps each page after clean-up (compressed); same file + same clean-up mode replays from memory (src/pipeline/run.js 'held', worker.js 'again'). Screen stays on Ready, dimmed (.busy); taps while busy = only the latest runs.
 - In-app update: UpdatePlugin.java downloads the APK to cache/update, opens the installer (REQUEST_INSTALL_PACKAGES; first time Android asks to allow Inkwell). Cache is wiped on every start. Not yet tested on a phone.
 
+
+## Update 2026-10-16 (v0.15.0)
+- Back: '‹ Back' on the Ready screen; leaving the start screen pushes one history entry so Android's back gesture returns home (closes the big preview first) instead of exiting.
+

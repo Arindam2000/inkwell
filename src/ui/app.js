@@ -16,6 +16,14 @@ function show(state) {
   document.querySelectorAll('section[data-state]').forEach((s) => {
     /** @type {HTMLElement} */ (s).hidden = /** @type {HTMLElement} */ (s).dataset.state !== state;
   });
+  // Leaving the start screen adds one history step, so the phone's Back comes home instead of closing the app.
+  if (state !== 'empty' && !history.state?.inner) history.pushState({ inner: true }, '');
+}
+
+/** Phone Back (or the Back button): close the big preview, else return to the start screen. */
+function back() {
+  if (!$('viewer').hidden) { $('viewer').hidden = true; history.pushState({ inner: true }, ''); return; }
+  show('empty');
 }
 
 /** @param {Gray} g @param {string} [type] @returns {Promise<Blob>} */
@@ -289,6 +297,8 @@ export function start() {
   $('choose').addEventListener('click', pick);
   $('again').addEventListener('click', pick);
   $('retry').addEventListener('click', () => show('empty'));
+  $('back').addEventListener('click', () => { history.replaceState(null, ''); show('empty'); }); // no waiting on the history: a quick next pick can't be undone
+  addEventListener('popstate', back);
   input.addEventListener('change', () => {
     const files = [...(input.files ?? [])];
     if (files.length) prepare(files.length === 1 ? files[0] : files);

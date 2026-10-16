@@ -158,3 +158,19 @@ test('changing a setting updates in place, faster than the first time (no re-rea
   await expect(page.locator('#summary')).toHaveText('2 pages · 2 sheets', { timeout: 15000 });
   await expect(page.locator('#app')).not.toHaveClass(/busy/);
 });
+
+test('Back: the button and the phone back gesture return to the start screen; back first closes a big preview', async ({ page }) => {
+  await open2(page);
+  await page.getByRole('button', { name: '‹ Back' }).click();
+  await expect(page.getByRole('button', { name: 'Choose photos or PDFs' })).toBeVisible();
+  await page.locator('#file').setInputFiles([]); // what tapping Choose does: same file can be picked again
+  await page.locator('#file').setInputFiles(fixture('two-page.pdf'));
+  await expect(page.locator('img.preview')).toHaveCount(2, { timeout: 15000 });
+  await page.locator('button.open').first().click();
+  await expect(page.locator('#viewer')).toBeVisible();
+  await page.goBack();
+  await expect(page.locator('#viewer')).toBeHidden();
+  await expect(page.locator('section[data-state="ready"]')).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole('button', { name: 'Choose photos or PDFs' })).toBeVisible();
+});
