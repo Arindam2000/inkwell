@@ -35,11 +35,11 @@ let pages = /** @type {Page[]} */ ([]);
 /** Pages the person tapped to leave out (indexes). */
 const skipped = new Set();
 let copies = 1;
-/** The file on screen, kept so a settings change can prepare it again. @type {Blob | null} */
+/** The file(s) on screen, kept so a settings change can prepare them again. @type {Blob | Blob[] | null} */
 let current = null;
 const TONE = 'inkwell-tone';
-/** @type {{tone: number, perSheet: 1|2, clean: 'auto'|'on'|'off'}} */
-const opts = { tone: 1, perSheet: 1, clean: 'auto' };
+/** @type {{tone: number, perSheet: 1|2, clean: 'auto'|'on'|'off', idCard: boolean}} */
+const opts = { tone: 1, perSheet: 1, clean: 'auto', idCard: false };
 try { opts.tone = Number(localStorage.getItem(TONE)) || 1; } catch { /* default */ }
 
 /** The pages that will print, in order. */
@@ -159,10 +159,11 @@ function note(text) {
   $('note').hidden = false;
 }
 
-/** @param {Blob} file */
-export async function prepare(file) {
+/** @param {Blob | Blob[]} file @param {boolean} [idCard] front + back of a card, on one sheet */
+export async function prepare(file, idCard = false) {
   if (file !== current) copies = 1;
   current = file;
+  opts.idCard = idCard;
   show('working');
   $('progress').textContent = 'Getting it ready…';
   try {
@@ -215,6 +216,22 @@ export function start() {
 
   $('print-hint').hidden = canPrintDirect();
   $('scan').hidden = !canPrintDirect();
+  const idInput = /** @type {HTMLInputElement} */ ($('id-files'));
+  $('idcard').addEventListener('click', async () => {
+    if (!canPrintDirect()) { idInput.value = ''; idInput.click(); return; }
+    note('Scan the front, then the back.');
+    try {
+      const scan = await scanWithCamera(2);
+      if (scan) prepare(scan, true);
+    } catch (e) {
+      const err = /** @type {InkwellError} */ (e);
+      note(`${err.message} ${err.hint}`);
+    }
+  });
+  idInput.addEventListener('change', () => {
+    const files = [...(idInput.files ?? [])].slice(0, 2);
+    if (files.length) prepare(files.length === 1 ? files[0] : files, true);
+  });
   $('scan').addEventListener('click', async () => {
     try {
       const scan = await scanWithCamera();
@@ -237,7 +254,7 @@ export function start() {
     if (d.tone) { opts.tone = Number(d.tone); try { localStorage.setItem(TONE, d.tone); } catch { /* fine */ } }
     if (d.per) opts.perSheet = d.per === '2' ? 2 : 1;
     mark();
-    if (current) prepare(current); // previews always show exactly what will print
+    if (current) prepare(current, opts.idCard); // previews always show exactly what will print
   }));
   $('minus').addEventListener('click', () => { copies = Math.max(1, copies - 1); refresh(); });
   $('plus').addEventListener('click', () => { copies = Math.min(20, copies + 1); refresh(); });

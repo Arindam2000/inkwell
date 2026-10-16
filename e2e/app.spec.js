@@ -13,14 +13,14 @@ test('a 2-page PDF shows 2 previews and the toner line, fast on a slow phone', a
   await asOldPhone(page);
   await page.goto('./');
   await page.getByRole('button', { name: 'Choose a photo or PDF' }).waitFor();
-  await page.locator('input[type=file]').setInputFiles(fixture('two-page.pdf'));
+  await page.locator('#file').setInputFiles(fixture('two-page.pdf'));
   await expect(page.locator('img.preview')).toHaveCount(2, { timeout: 8000 });
   await expect(page.getByText(/^Toner: \d+%$/)).toBeVisible();
 });
 
 test('a text file shows the friendly message and a way back', async ({ page }) => {
   await page.goto('./');
-  await page.locator('input[type=file]').setInputFiles(fixture('note.txt'));
+  await page.locator('#file').setInputFiles(fixture('note.txt'));
   await expect(page.getByText("Inkwell can't open this kind of file.")).toBeVisible();
   await expect(page.getByText('Share a photo or a PDF instead.')).toBeVisible();
   await page.getByRole('button', { name: 'Try another file' }).click();

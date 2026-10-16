@@ -22,7 +22,7 @@ const shared = (page) => page.evaluate(() => window.__shared);
 
 async function open2(page) {
   await page.goto('./');
-  await page.locator('input[type=file]').setInputFiles(fixture('two-page.pdf'));
+  await page.locator('#file').setInputFiles(fixture('two-page.pdf'));
   await expect(page.locator('img.preview')).toHaveCount(2, { timeout: 15000 });
 }
 
@@ -91,4 +91,11 @@ test('2 pages per sheet and darker: previews redo, sheet count halves, setting r
   await expect(page.getByRole('button', { name: 'Darker' })).toHaveAttribute('aria-pressed', 'true');
   await page.reload();
   await expect(page.getByRole('button', { name: 'Darker', includeHidden: true })).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('ID card: two pages become one sheet', async ({ page }) => {
+  await page.goto('./');
+  await page.locator('#id-files').setInputFiles(fixture('two-page.pdf'));
+  await expect(page.locator('img.preview')).toHaveCount(1, { timeout: 15000 });
+  await expect(page.locator('#summary')).toHaveText('1 page · 1 sheet');
 });

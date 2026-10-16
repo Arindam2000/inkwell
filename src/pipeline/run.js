@@ -10,7 +10,7 @@ const BROKE = () => new InkwellError('Something went wrong while preparing the p
 
 /**
  * Prepare a file for printing in a background worker, so the screen never freezes.
- * @param {Blob} file
+ * @param {Blob | Blob[]} file one file, or several read one after another (ID card front + back)
  * @param {(done: number, total: number | null) => void} onProgress
  * @param {import('./pipeline.js').Options} [opts] lighter/darker, pages per sheet
  * @returns {Promise<{pdf: Uint8Array, pages: Page[], previews: Gray[], tonerPct: number}>}
@@ -32,7 +32,7 @@ export async function run(file, onProgress, opts = {}) {
     const previews = [];
     await ask({ type: 'start', opts }, []);
     let read = 0;
-    for await (const gray of readFile(file)) {
+    for (const f of Array.isArray(file) ? file : [file]) for await (const gray of readFile(f)) {
       const r = /** @type {{preview: Gray | null}} */ (await ask({ type: 'page', gray }, [gray.data.buffer]));
       if (r.preview) previews.push(r.preview);
       onProgress(++read, null);

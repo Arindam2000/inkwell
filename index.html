@@ -21,6 +21,7 @@
     <section data-state="empty">
       <button id="scan" class="big" hidden>Scan with camera</button>
       <button id="choose" class="big">Choose a photo or PDF</button>
+      <button id="idcard" class="big quiet">ID card (front + back)</button>
       <p class="hint">Or share from Drive → Inkwell</p>
     </section>
     <section data-state="working" hidden>
@@ -96,6 +97,7 @@
   </main>
   <footer><p id="about"></p></footer>
   <input id="file" type="file" accept="image/*,application/pdf" hidden>
+  <input id="id-files" type="file" accept="image/*,application/pdf" multiple hidden>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

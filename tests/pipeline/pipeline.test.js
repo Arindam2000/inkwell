@@ -45,3 +45,10 @@ test('2 pages per sheet: page 1 on top, page 2 below, an odd last page shares wi
   expect(at(0.5, 0.25)).toBeLessThan(60); // black page on top
   expect(at(0.5, 0.75)).toBeGreaterThan(200); // white page below
 });
+
+test('ID card mode: front + back become one A4 page', async () => {
+  async function* pages() { yield flat(30, 400, 252); yield flat(60, 400, 252); }
+  const res = await processAll(pages(), HP_M126NW, () => {}, { idCard: true });
+  expect(res.pages).toHaveLength(1);
+  expect(res.previews).toHaveLength(1);
+});

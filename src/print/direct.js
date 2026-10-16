@@ -18,12 +18,13 @@ export const canPrintDirect = () => Capacitor.isNativePlatform();
 /**
  * Android app only: Google's on-device document scanner (edges, crop, auto enhance, stain removal,
  * several pages). Returns the scan as one PDF, or null if the person backed out.
+ * @param {number} [pages] most pages to scan
  * @returns {Promise<Blob | null>}
  */
-export async function scanWithCamera() {
+export async function scanWithCamera(pages = 30) {
   const { DocumentScanner } = await import('@capacitor-mlkit/document-scanner');
   try {
-    const { pdf } = await DocumentScanner.scanDocument({ scannerMode: 'FULL', resultFormats: 'PDF', galleryImportAllowed: true, pageLimit: 30 });
+    const { pdf } = await DocumentScanner.scanDocument({ scannerMode: 'FULL', resultFormats: 'PDF', galleryImportAllowed: true, pageLimit: pages });
     if (!pdf) return null;
     return await (await fetch(Capacitor.convertFileSrc(pdf.uri))).blob();
   } catch (e) {

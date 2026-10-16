@@ -5,6 +5,7 @@ import { assemblePdf, compressPage } from '../pdf/writePdf.js';
 import { applyCurve } from '../printer/profile.js';
 import { cleanScan } from '../scan/clean.js';
 import { cropPage } from '../scan/crop.js';
+import { idCardSheet } from '../layout/idCard.js';
 
 /** @typedef {import('../image/types.js').Gray} Gray */
 /** @typedef {typeof import('../printer/profile.js').HP_M126NW} Profile */
@@ -13,8 +14,9 @@ export const DPI = 300;
 export const PREVIEW_HEIGHT = 600;
 
 /**
- * @typedef {{tone?: number, perSheet?: 1|2, clean?: 'auto'|'on'|'off'}} Options
+ * @typedef {{tone?: number, perSheet?: 1|2, clean?: 'auto'|'on'|'off', idCard?: boolean}} Options
  * tone: 1 normal, < 1 lighter, > 1 darker. clean: Magic Scan cleanup (auto = documents only, photos untouched).
+ * idCard: pages are the front and back of a card, printed together at real size.
  */
 
 /** One page: lighter/darker, printer tuning, then fit to A4. @param {Gray} g @param {Profile} profile @param {Options} [opts] */
@@ -61,6 +63,7 @@ export class Job {
 
   /** A finished page or sheet; with 2 per sheet, the first of each pair waits (no preview yet). @param {Gray} g */
   async add(g) {
+    if (this.opts.idCard) return this.addCard(g);
     const page = processPage(g, this.profile, this.opts);
     if (this.opts.perSheet !== 2) return this.keep(page);
     if (!this.pending) { this.pending = page; return { preview: null, tonerPct: 0 }; }
@@ -69,10 +72,22 @@ export class Job {
     return this.keep(sheet);
   }
 
-  /** Any leftover odd page shares its sheet with a blank. */
+  /** ID card: crop the card out of a photo, keep its picture as it is (no paper clean-up), pair front + back. @param {Gray} g */
+  async addCard(g) {
+    const { tone = 1 } = this.opts;
+    const c = (g.photo && cropPage(g)) || g;
+    const toned = tone === 1 ? c : applyCurve(c, Array.from({ length: 17 }, (_, i) => [i / 16, (i / 16) ** tone]));
+    const card = applyCurve(toned, this.profile.curve);
+    if (!this.pending) { this.pending = card; return { preview: null, tonerPct: 0 }; }
+    const sheet = idCardSheet(this.pending, card);
+    this.pending = null;
+    return this.keep(sheet);
+  }
+
+  /** Any leftover odd page shares its sheet with a blank (ID card: a front with no back). */
   async flush() {
     if (!this.pending) return null;
-    const sheet = twoUp(this.pending, null);
+    const sheet = this.opts.idCard ? idCardSheet(this.pending, null) : twoUp(this.pending, null);
     this.pending = null;
     return this.keep(sheet);
   }
