@@ -28,3 +28,8 @@
 - Android app prints direct: `src/print/{urf,ipp,direct}.js` + `android/.../IppPlugin.java` (mDNS `_ipp._tcp` discovery, IPP Print-Job with URF 600 dpi, quality 5). Spike 05 proved 100 mm exact from laptop.
 - v0.3.0: page numbers, tap-to-skip, copies, summary. v0.4.0: book print in 5-sheet batches with blank-sheet check and per-batch redo (double-feed fix).
 - Next: phone test of APK direct print; then 2 pages per sheet, lighter/darker; then camera scan (magic crop + auto enhance). Rea: Arindam to run `npx rea-agents@6.5.0 setup` himself.
+
+## Update 2026-10-16 (evening)
+- v0.5-0.7: share into Android app (SharedPlugin), Inkwell icon, darkness + 2 per sheet, camera scan via @capacitor-mlkit/document-scanner (FULL mode, PDF result).
+- APK now signed with a fixed key: `.keys/inkwell.p12` (git-ignored, password in `.env` INKWELL_KEY_PASS), uploaded as secrets INKWELL_KEYSTORE_B64 / INKWELL_KEY_PASS. Losing the key = users must uninstall to update; keep `.keys/` backed up.
+- Next: phone test of v0.7.0 (scan, share, signed update), then Magic Scan cleanup extras (ID card mode, show-through), then v1.0 fresh review.
