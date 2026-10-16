@@ -68,3 +68,5 @@
 
 - v0.17.0: Android Back handled natively (MainActivity OnBackPressedCallback asks window.inkwellBack(); false = moveTaskToBack). No @capacitor/app plugin, so before this Back closed the app. Save as image: gray->RGBA with Uint32 writes (was a 4-element array per pixel). Save/Print buttons guarded: taps while working are ignored, label shows 'Saving 2 of 5…'.
 
+- Gotcha: when checking `npm test`, look for 'Failed Suites' too. A module that won't load (e.g. top-level `window` in app.js, imported by tests/smoke.test.js) drops the count by one instead of showing a failed test. Use globalThis.
+
