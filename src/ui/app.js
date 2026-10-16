@@ -3,7 +3,7 @@ import { assemblePdf } from '../pdf/writePdf.js';
 import { DPI } from '../pipeline/pipeline.js';
 import { run } from '../pipeline/run.js';
 import { batches, bookOrder, packPages, unpackPages } from '../print/book.js';
-import { canPrintDirect, cleanupUpdate, installUpdate, onSharedFile, printDirect, scanWithCamera, sendFiles } from '../print/direct.js';
+import { canPrintDirect, cleanupUpdate, findPrinters, installUpdate, onSharedFile, printDirect, printWithAndroid, scanWithCamera, sendFiles } from '../print/direct.js';
 import { shrinkToHeight } from '../image/shrink.js';
 import { HELLO, WAIT, julee, say } from './julee.js';
 
@@ -115,13 +115,80 @@ async function handOver(bytes, name) {
  */
 async function output(list, name) {
   if (!canPrintDirect()) return handOver(assemblePdf(list, DPI), `${name}.pdf`);
+  const printer = savedPrinter() ?? (await pickPrinter(true));
+  if (!printer) return;
+  if (printer.host === ANDROID.host) return printWithAndroid(assemblePdf(list, DPI), name);
   try {
-    note('Sending to the printer…');
-    await printDirect(list, DPI, name, (n) => note(`Sending to the printer… page ${n} of ${list.length}`), opts.quality);
+    note(`Sending to ${printer.name}…`);
+    await printDirect(list, DPI, name, printer.host, (n) => note(`Sending to ${printer.name}… page ${n} of ${list.length}`), opts.quality);
     note('Printing ✓');
   } catch (e) {
     const err = e instanceof InkwellError ? e : new InkwellError("Couldn't print.", 'Try again.');
-    note(`${err.message} ${err.hint}`);
+    note(`${err.message} ${err.hint} Or tap "Printer" to pick another, or print with Android.`);
+  }
+}
+
+/** @typedef {import('../print/direct.js').Printer} Printer */
+const PRINTER = 'inkwell-printer';
+/** Android's own print screen, as a choice like any printer. @type {Printer} */
+const ANDROID = { name: 'Android print screen', host: 'android' };
+
+/** The printer chosen before (older versions kept only its address). @returns {Printer | null} */
+function savedPrinter() {
+  try {
+    const v = localStorage.getItem(PRINTER);
+    return !v ? null : v.startsWith('{') ? JSON.parse(v) : { name: v, host: v };
+  } catch { return null; }
+}
+/** @param {Printer} p */
+function rememberPrinter(p) {
+  try { localStorage.setItem(PRINTER, JSON.stringify(p)); } catch { /* just not remembered */ }
+  showPrinter();
+}
+function showPrinter() {
+  $('printer-pick').textContent = `Printer: ${savedPrinter()?.name ?? 'choose'} ▾`;
+}
+
+/** Closes the picker with the person's choice (null = cancelled). @type {((p: Printer | null) => void) | null} */
+let answer = null;
+/**
+ * Ask which printer: the ones found on this Wi-Fi, or Android's print screen for any other printer.
+ * With `auto` and exactly one printer found, it's chosen without asking. The choice is remembered.
+ * @param {boolean} auto @param {() => Promise<Printer[]>} [find] @returns {Promise<Printer | null>}
+ */
+export function pickPrinter(auto, find = findPrinters) {
+  answer?.(null);
+  $('picker').hidden = false;
+  return new Promise((resolve) => {
+    answer = (p) => {
+      $('picker').hidden = true;
+      answer = null;
+      if (p) rememberPrinter(p);
+      resolve(p);
+    };
+    search(auto, find);
+  });
+}
+
+/** @param {boolean} auto @param {() => Promise<Printer[]>} [find] */
+async function search(auto, find = findPrinters) {
+  const list = $('picker-list');
+  list.replaceChildren();
+  $('picker-msg').textContent = 'Looking for printers on this Wi-Fi…';
+  /** @type {Printer[]} */
+  let found = [];
+  try { found = await find(); } catch { /* none */ }
+  if (!answer) return; // cancelled meanwhile
+  if (auto && found.length === 1) return answer(found[0]);
+  $('picker-msg').textContent = found.length
+    ? 'Tap your printer. Inkwell remembers it.'
+    : 'No printer found on this Wi-Fi. Check the printer is on and the phone is on the same Wi-Fi, or print with Android.';
+  for (const p of found) {
+    const b = document.createElement('button');
+    b.className = 'big';
+    b.append(p.name, Object.assign(document.createElement('small'), { textContent: p.host }));
+    b.addEventListener('click', () => answer?.(p));
+    list.append(b);
   }
 }
 
@@ -346,6 +413,7 @@ function guard(btn, working, action) {
 
 /** Phone Back in the Android app (MainActivity asks): true if Inkwell went back a step, false to leave the app. */
 /** @type {any} */ (globalThis).inkwellBack = () => {
+  if (answer) { answer(null); return true; }
   if (!$('viewer').hidden) { $('viewer').hidden = true; return true; }
   if (!document.querySelector('section[data-state="empty"]')?.hasAttribute('hidden')) return false;
   history.replaceState(null, '');
@@ -377,6 +445,12 @@ export function start() {
   checkUpdate();
 
   $('print-hint').hidden = canPrintDirect();
+  $('printer-pick').hidden = !canPrintDirect();
+  showPrinter();
+  $('printer-pick').addEventListener('click', () => pickPrinter(false));
+  $('pick-again').addEventListener('click', () => search(false));
+  $('pick-android').addEventListener('click', () => answer?.(ANDROID));
+  $('pick-cancel').addEventListener('click', () => answer?.(null));
   guard($('save-pdf'), 'Saving…', (b) => save('pdf', b));
   guard($('save-img'), 'Saving…', (b) => save('jpg', b));
   $('v-close').addEventListener('click', () => { $('viewer').hidden = true; });

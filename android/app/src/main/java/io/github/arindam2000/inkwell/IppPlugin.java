@@ -3,6 +3,14 @@ package io.github.arindam2000.inkwell;
 import android.content.Context;
 import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
+import android.os.Bundle;
+import android.os.CancellationSignal;
+import android.os.ParcelFileDescriptor;
+import android.print.PageRange;
+import android.print.PrintAttributes;
+import android.print.PrintDocumentAdapter;
+import android.print.PrintDocumentInfo;
+import android.print.PrintManager;
 import android.util.Base64;
 
 import com.getcapacitor.JSArray;
@@ -134,5 +142,32 @@ public class IppPlugin extends Plugin {
 
     private File job(String id) {
         return new File(getContext().getCacheDir(), "ipp-" + id.replaceAll("[^a-z0-9-]", "") + ".job");
+    }
+
+    /** Any printer: Android's own print screen with this PDF (uses the phone's print services: Mopria, HP, USB…). */
+    @PluginMethod
+    public void systemPrint(PluginCall call) {
+        final byte[] pdf = Base64.decode(call.getString("data", ""), Base64.DEFAULT);
+        final String name = call.getString("name", "Inkwell");
+        getActivity().runOnUiThread(() -> {
+            PrintManager pm = (PrintManager) getActivity().getSystemService(Context.PRINT_SERVICE);
+            pm.print(name, new PrintDocumentAdapter() {
+                @Override
+                public void onLayout(PrintAttributes oldA, PrintAttributes newA, CancellationSignal cancel, LayoutResultCallback cb, Bundle extras) {
+                    if (cancel.isCanceled()) { cb.onLayoutCancelled(); return; }
+                    cb.onLayoutFinished(new PrintDocumentInfo.Builder(name + ".pdf").setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT).build(), true);
+                }
+                @Override
+                public void onWrite(PageRange[] range, ParcelFileDescriptor dest, CancellationSignal cancel, WriteResultCallback cb) {
+                    try (FileOutputStream out = new FileOutputStream(dest.getFileDescriptor())) {
+                        out.write(pdf);
+                        cb.onWriteFinished(new PageRange[]{PageRange.ALL_PAGES});
+                    } catch (Exception e) {
+                        cb.onWriteFailed(e.getMessage());
+                    }
+                }
+            }, new PrintAttributes.Builder().setMediaSize(PrintAttributes.MediaSize.ISO_A4).build());
+            call.resolve();
+        });
     }
 }

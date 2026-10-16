@@ -83,3 +83,5 @@
 
 - v0.23.0: big preview never blank (small preview shown at once; old blob URL had been revoked when settings changed). Update: download first with a moving bar (showUpdate in app.js), THEN Android's 'allow from this source'; finished download kept as cache/update/inkwell-<ver>.apk (.part while downloading); deleted on start only when up to date.
 
+- v0.24.0: printer picker (app.js pickPrinter/search; localStorage 'inkwell-printer' = {name, host}, old plain-host value still read). 'Printer: … ▾' row on Ready (app only). 'Print with Android' = IppPlugin.systemPrint (PrintManager + PDF adapter), remembered as host 'android'. One printer found = chosen without asking.
+

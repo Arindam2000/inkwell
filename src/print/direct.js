@@ -11,7 +11,6 @@ import { urfHeader, urfPage } from './urf.js';
  * @type {any}
  */
 const Ipp = registerPlugin('Ipp');
-const HOST_KEY = 'inkwell-printer';
 
 export const canPrintDirect = () => Capacitor.isNativePlatform();
 
@@ -72,27 +71,29 @@ async function inflate(bytes) {
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
-/** The remembered printer, or the first one found on the Wi-Fi. */
-async function printerHost() {
-  let host = null;
-  try { host = localStorage.getItem(HOST_KEY); } catch { /* not remembered */ }
-  if (host) return host;
+/** @typedef {{name: string, host: string}} Printer */
+
+/** Printers on this Wi-Fi (IPP / AirPrint / Mopria ones). @returns {Promise<Printer[]>} */
+export async function findPrinters() {
   const { printers } = await Ipp.discover();
-  if (!printers.length) throw new InkwellError("Can't find the printer.", 'Check the phone is on the home Wi-Fi and the printer is on.');
-  host = printers[0].host;
-  try { localStorage.setItem(HOST_KEY, /** @type {string} */ (host)); } catch { /* fine */ }
-  return host;
+  return printers.map((/** @type {Printer} */ p) => ({ name: p.name, host: p.host }));
 }
+
+/**
+ * Any printer at all: hand the PDF to Android's own print screen, which uses whatever print services the
+ * phone has (Mopria, HP, Canon, USB…). @param {Uint8Array} pdf @param {string} name
+ */
+export const printWithAndroid = (pdf, name) => Ipp.systemPrint({ name, data: toB64(pdf) });
 
 /**
  * Print pages straight to the printer: 600 dpi, high quality, true size, no print screen.
  * Pages are unpacked and sent one at a time, so memory stays flat.
  * ponytail: photo pages are ~35 MB raw at 600 dpi; switch to PCLm (flate strips) if big photo jobs feel slow.
  * @param {(Page | null)[]} pages null = blank page @param {number} dpi @param {string} name
+ * @param {string} host the printer's address
  * @param {(done: number) => void} [onProgress] @param {3|4|5} [quality] 3 draft, 4 normal, 5 best
  */
-export async function printDirect(pages, dpi, name, onProgress = () => {}, quality = 5) {
-  const host = await printerHost();
+export async function printDirect(pages, dpi, name, host, onProgress = () => {}, quality = 5) {
   const { id } = await Ipp.begin();
   const send = (/** @type {Uint8Array} */ b) => Ipp.append({ id, data: toB64(b) });
   const job = ippPrintJob(host, urfHeader(pages.length), name, quality);
@@ -108,7 +109,6 @@ export async function printDirect(pages, dpi, name, onProgress = () => {}, quali
   try {
     reply = await Ipp.finish({ id, url: `http://${host}:631/ipp/print` });
   } catch {
-    try { localStorage.removeItem(HOST_KEY); } catch { /* fine */ }
     throw new InkwellError("Couldn't reach the printer.", 'Check the phone is on the home Wi-Fi and the printer is on, then try again.');
   }
   const status = ippStatus(Uint8Array.from(atob(reply.data), (c) => c.charCodeAt(0)));

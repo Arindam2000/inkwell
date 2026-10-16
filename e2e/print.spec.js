@@ -262,3 +262,26 @@ test('Update button: moving bar and "Downloading…" the moment it is tapped, th
   });
   expect(steps).toEqual(['Update to v9.9.9', 'Downloading…|true', 'Downloading… 40%|40%', 'Installing…']);
 });
+
+test('printer picker: lists the printers found, remembers the choice; one printer is picked by itself; none offers Android', async ({ page }) => {
+  await page.goto('./');
+  const r = await page.evaluate(async () => {
+    const { pickPrinter } = await import('/inkwell/src/ui/app.js');
+    const two = async () => [{ name: 'HP LaserJet', host: '192.168.1.5' }, { name: 'Canon Office', host: '192.168.1.9' }];
+    const chosen = pickPrinter(false, two);
+    await new Promise((res) => setTimeout(res, 50));
+    const names = [...document.querySelectorAll('#picker-list button')].map((b) => b.firstChild.textContent);
+    /** @type {HTMLElement} */ (document.querySelectorAll('#picker-list button')[1]).click();
+    const pick = await chosen;
+    const saved = JSON.parse(localStorage.getItem('inkwell-printer'));
+    const auto = await pickPrinter(true, async () => [{ name: 'Only One', host: '10.0.0.2' }]);
+    const none = pickPrinter(false, async () => []);
+    await new Promise((res) => setTimeout(res, 50));
+    const msg = document.getElementById('picker-msg').textContent;
+    document.getElementById('pick-android').click();
+    const android = await none;
+    return { names, pick: pick.name, saved: saved.host, auto: auto.name, msg, android: android.host, hidden: document.getElementById('picker').hidden };
+  });
+  expect(r).toEqual({ names: ['HP LaserJet', 'Canon Office'], pick: 'Canon Office', saved: '192.168.1.9', auto: 'Only One',
+    msg: expect.stringContaining('No printer found'), android: 'android', hidden: true });
+});
