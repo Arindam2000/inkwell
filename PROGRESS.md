@@ -18,3 +18,8 @@ Source: Arindam's scan `Scanned_20261016-1249.pdf` + his eye readings.
 
 - Pass 2 landed almost exactly; pass 3 slid 2-5 mm left and slightly skewed (bottom moved more than top). The "P3" label is ~4 mm left of "P2".
 - **Not repeatable** -> `drift: null`. Spec risk row applies: multi-pass designs must tolerate ~5 mm, not 3; Secret message stays a maybe for M2.
+
+## Spike 05: direct print over Wi-Fi (2026-10-16)
+- Printer IPP answer: formats `image/urf`, `application/PCLm`, `image/jpeg`; 600x600 only; quality 3/4/5; margins 4 mm; one-sided; output face-down.
+- Laptop sent a 600 dpi 8-bit URF ruler page via IPP Print-Job (quality 5): printer status successful-ok. Ruler measurement: pending.
+- A Chrome PWA on https can't reach `http://192.168.x.x:631` (mixed content + CORS), so direct print needs an Android app shell.
