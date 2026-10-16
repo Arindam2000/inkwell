@@ -73,3 +73,13 @@ test('ink saver flips a dark screenshot to light, leaves a normal page alone', a
   expect(flipIfDark(flat(20)).data[0]).toBe(235);
   expect(flipIfDark(flat(240)).data[0]).toBe(240);
 });
+
+test('mini book: 10 pages make 2 sheets (4 sides); page 1 lands bottom-right of the back, upright', async () => {
+  async function* pages(n) { for (let i = 0; i < n; i++) yield flat(i === 0 ? 0 : 255); }
+  const m = await processAll(pages(10), HP_M126NW, () => {}, { mini: 8, clean: 'off' });
+  expect(m.pages).toHaveLength(4);
+  const back = m.previews[1];
+  const dark = (x, y) => back.data[Math.round(y * back.height) * back.width + Math.round(x * back.width)] < 128;
+  expect([dark(0.75, 0.75), dark(0.25, 0.75), dark(0.75, 0.25), dark(0.25, 0.25)]).toEqual([true, false, false, false]);
+  expect(m.previews[0].data.every((v) => v > 128)).toBe(true); // the inside has no page 1
+}, 60_000);

@@ -6,6 +6,7 @@ import { applyCurve } from '../printer/profile.js';
 import { cleanScan } from '../scan/clean.js';
 import { cropPage } from '../scan/crop.js';
 import { idCardSheet } from '../layout/idCard.js';
+import { miniBookPlan } from '../layout/miniBook.js';
 
 /** @typedef {import('../image/types.js').Gray} Gray */
 /** @typedef {typeof import('../printer/profile.js').HP_M126NW} Profile */
@@ -16,10 +17,11 @@ export const PREVIEW_HEIGHT = 600;
 
 /**
  * @typedef {{tone?: number, perSheet?: 1|2|4, clean?: 'auto'|'on'|'off', idCard?: boolean,
- *   size?: 'fit'|'actual', booklet?: boolean, inkSaver?: boolean}} Options
+ *   size?: 'fit'|'actual', booklet?: boolean, mini?: 0|8|16, inkSaver?: boolean}} Options
  * tone: 1 normal, < 1 lighter, > 1 darker. clean: Magic Scan cleanup (auto = documents only, photos untouched).
  * idCard: pages are the front and back of a card, printed together at real size.
  * size: fit the A4 sheet, or print at the page's true size (PDFs). booklet: A5 booklet to fold in half.
+ * mini: a pocket book of 8 or 16 pages from each sheet (see miniBook.js).
  * inkSaver: dark pages (night-mode screenshots) flip to light.
  */
 
@@ -68,6 +70,9 @@ function nUp(list, n) {
   return fitA4({ width: W, height: H, data }, { dpi: DPI });
 }
 
+/** Upside down. @param {Gray} g @returns {Gray} */
+const turn = (g) => ({ ...g, data: g.data.slice().reverse() });
+
 /** @param {Packed} p @returns {Promise<Gray>} */
 async function unpack(p) {
   const stream = new Blob([/** @type {BlobPart} */ (p.bytes)]).stream().pipeThrough(new DecompressionStream('deflate'));
@@ -110,7 +115,7 @@ export class Job {
   async add(g) {
     if (this.opts.idCard) return this.addCard(g);
     const page = processPage(g, this.profile, this.opts);
-    if (this.opts.booklet) { this.held.push(await compressPage(page)); return { preview: null, tonerPct: 0 }; }
+    if (this.opts.booklet || this.opts.mini) { this.held.push(await compressPage(page)); return { preview: null, tonerPct: 0 }; }
     const n = this.opts.perSheet ?? 1;
     if (n === 1) return this.keep(page);
     this.pending.push(page);
@@ -136,10 +141,18 @@ export class Job {
   async flush() {
     /** @type {Gray[]} */
     const previews = [];
-    if (this.opts.booklet) {
-      for (const side of bookletSides(this.held.length)) {
+    if (this.opts.mini) {
+      for (let first = 0; first < this.held.length; first += this.opts.mini) {
+        const plan = miniBookPlan(this.opts.mini, this.held.length, first);
+        for (const side of [plan.front, plan.back]) previews.push(/** @type {Gray} */ ((await this.keep(await this.miniSide(plan, side))).preview));
+      }
+      this.held = [];
+    } else if (this.opts.booklet) {
+      for (const [k, side] of bookletSides(this.held.length).entries()) {
         const [l, r] = await Promise.all(side.map((i) => (i === null ? null : unpack(this.held[i]))));
-        previews.push(/** @type {Gray} */ ((await this.keep(nUp([l, r], 2))).preview));
+        const sheet = nUp([l, r], 2);
+        // A sheet folded across its width turns over on the short edge; book print turns on the long one.
+        previews.push(/** @type {Gray} */ ((await this.keep(k % 2 ? turn(sheet) : sheet)).preview));
       }
       this.held = [];
     } else if (this.pending.length) {
@@ -148,6 +161,22 @@ export class Job {
     }
     this.pending = [];
     return previews;
+  }
+
+  /** One side of a mini book sheet: every page shrunk into its cell, some upside down. @param {import('../layout/miniBook.js').Plan} plan @param {import('../layout/miniBook.js').Cell[][]} side */
+  async miniSide(plan, side) {
+    const a = Math.round((210 / 25.4) * DPI), b = Math.round((297 / 25.4) * DPI);
+    const W = plan.landscape ? b : a, H = plan.landscape ? a : b;
+    const cw = Math.floor(W / plan.cols), ch = Math.floor(H / plan.rows);
+    const data = new Uint8Array(W * H).fill(255);
+    for (const [r, row] of side.entries()) for (const [c, cell] of row.entries()) {
+      if (cell.page === null) continue;
+      let g = shrinkToHeight(await unpack(this.held[cell.page]), ch);
+      if (cell.turn) g = turn(g);
+      const ox = c * cw + Math.floor((cw - g.width) / 2), oy = r * ch + Math.floor((ch - g.height) / 2);
+      for (let y = 0; y < g.height; y++) data.set(g.data.subarray(y * g.width + Math.max(0, -ox), (y + 1) * g.width), (oy + y) * W + Math.max(0, ox));
+    }
+    return fitA4({ width: W, height: H, data }, { dpi: DPI });
   }
 
   /** @param {Gray} page @returns {Promise<{preview: Gray | null, tonerPct: number}>} */

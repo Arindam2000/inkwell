@@ -48,3 +48,10 @@
 ## Update 2026-10-16 (v0.12.0)
 - More options done: Quality Draft/Normal/Best, Actual size, 4 per sheet, Booklet, Ink saver. 41 unit + 21 e2e pass. Committed locally; deploy + push await Arindam's OK.
 
+
+## Update 2026-10-16 (v0.13.0)
+- v0.12.0 shipped (deploy + APK). Local branch is m0-foundation and has no remote: push with `git push <url> m0-foundation:main` using the token header like scripts/deploy.ps1. Run `npm run build` before `npm run deploy` (deploy doesn't build).
+- Mini book (src/layout/miniBook.js): 8 pages (A6, folds H,V) or 16 (A7, folds V,H,V) per sheet, page order from a fold simulator; 8-page matches the textbook quarto. 'Try a numbered fold test' button. Several files can be picked at once.
+- Booklet backs now turned 180 (folded across the width = short-edge flip; book print turns on the long edge). Not yet checked on paper.
+- Update button: Android app reads the release title 'Inkwell vX.Y.Z' from the GitHub API and links to the APK (Android asks once to install).
+

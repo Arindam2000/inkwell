@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; worker-src 'self' blob:; connect-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; worker-src 'self' blob:; connect-src 'self' https://api.github.com">
   <meta name="theme-color" content="#fbfaf7">
   <title>Inkwell</title>
   <link rel="manifest" href="/inkwell/manifest.webmanifest">
@@ -18,9 +18,10 @@
   </header>
   <main id="app">
     <p class="note" id="note" hidden></p>
+    <button id="update" class="big" hidden></button>
     <section data-state="empty">
       <button id="scan" class="big" hidden>Scan with camera</button>
-      <button id="choose" class="big">Choose a photo or PDF</button>
+      <button id="choose" class="big">Choose photos or PDFs</button>
       <button id="idcard" class="big quiet">ID card (front + back)</button>
       <p class="hint">Or share from Drive → Inkwell</p>
     </section>
@@ -81,6 +82,17 @@
         <button data-opt="booklet" data-val="true" aria-pressed="false">On</button>
       </div>
       <p class="hint">A little A5 book: print with "Print as a book", then fold in half.</p>
+      <div class="choice" role="group" aria-label="Mini book">
+        <span>Mini book</span>
+        <button data-opt="mini" data-val="0" aria-pressed="false">Off</button>
+        <button data-opt="mini" data-val="8" aria-pressed="false">8 pages</button>
+        <button data-opt="mini" data-val="16" aria-pressed="false">16 pages</button>
+      </div>
+      <p class="hint">A pocket book from each sheet: print with "Print as a book", lay page 1 face down with the upright pages toward you, then fold.<br>
+        8 pages: top half down, then left half over to the right.<br>
+        16 pages: turn the sheet sideways first; left over right, top down, left over right.<br>
+        Staple the left fold, trim the other folded edges.</p>
+      <button id="fold-test" class="big quiet">Try a numbered fold test</button>
       <div class="choice" role="group" aria-label="Clean-up">
         <span>Clean-up</span>
         <button data-opt="clean" data-val="auto" aria-pressed="false">Auto</button>
@@ -140,7 +152,7 @@
     <button id="v-close" class="big">Close</button>
   </div>
   <footer><p id="about"></p></footer>
-  <input id="file" type="file" accept="image/*,application/pdf" hidden>
+  <input id="file" type="file" accept="image/*,application/pdf" multiple hidden>
   <input id="id-files" type="file" accept="image/*,application/pdf" multiple hidden>
   <script type="module" src="/src/main.js"></script>
 </body>

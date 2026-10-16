@@ -15,7 +15,7 @@ test('opens with Wi-Fi off after the first visit', async ({ page, context }) => 
   await controlled(page);
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Choose a photo or PDF' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Choose photos or PDFs' })).toBeVisible();
 });
 
 test('a file shared to Inkwell opens straight into a preview', async ({ page }) => {

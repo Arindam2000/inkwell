@@ -128,3 +128,16 @@ test('more options: booklet makes sides to fold; quality is remembered', async (
   await page.getByText('More options').click();
   await expect(page.getByRole('button', { name: 'Draft' })).toHaveAttribute('aria-pressed', 'true');
 });
+
+test('mini book: several PDFs at once fold into one pocket book; the numbered fold test makes one too', async ({ page }) => {
+  await page.goto('./');
+  await page.locator('#file').setInputFiles([fixture('two-page.pdf'), fixture('two-page.pdf')]);
+  await expect(page.locator('img.preview')).toHaveCount(4, { timeout: 15000 });
+  await page.getByText('More options').click();
+  await page.getByRole('group', { name: 'Mini book' }).getByRole('button', { name: '8 pages' }).click();
+  await expect(page.locator('#summary')).toHaveText('mini book: 2 sides · 2 sheets', { timeout: 15000 });
+  await page.getByRole('group', { name: 'Mini book' }).getByRole('button', { name: '16 pages' }).click();
+  await page.getByRole('button', { name: 'Try a numbered fold test' }).click();
+  await expect(page.locator('img.preview')).toHaveCount(2, { timeout: 15000 });
+  await expect(page.locator('.cap').first()).toHaveText('Side 1 of 2');
+});

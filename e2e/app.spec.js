@@ -12,7 +12,7 @@ async function asOldPhone(page) {
 test('a 2-page PDF shows 2 previews and the toner line, fast on a slow phone', async ({ page }) => {
   await asOldPhone(page);
   await page.goto('./');
-  await page.getByRole('button', { name: 'Choose a photo or PDF' }).waitFor();
+  await page.getByRole('button', { name: 'Choose photos or PDFs' }).waitFor();
   await page.locator('#file').setInputFiles(fixture('two-page.pdf'));
   await expect(page.locator('img.preview')).toHaveCount(2, { timeout: 8000 });
   await expect(page.getByText(/^Toner: \d+%$/)).toBeVisible();
@@ -24,7 +24,7 @@ test('a text file shows the friendly message and a way back', async ({ page }) =
   await expect(page.getByText("Inkwell can't open this kind of file.")).toBeVisible();
   await expect(page.getByText('Share a photo or a PDF instead.')).toBeVisible();
   await page.getByRole('button', { name: 'Try another file' }).click();
-  await expect(page.getByRole('button', { name: 'Choose a photo or PDF' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Choose photos or PDFs' })).toBeVisible();
 });
 
 test('every button is at least 48 px tall', async ({ page }) => {
@@ -36,7 +36,7 @@ test('every button is at least 48 px tall', async ({ page }) => {
 
 test('only one screen state is visible at a time', async ({ page }) => {
   await page.goto('./');
-  await expect(page.getByRole('button', { name: 'Choose a photo or PDF' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Choose photos or PDFs' })).toBeVisible();
   await expect(page.getByText('Getting it ready…')).toBeHidden();
   await expect(page.getByRole('button', { name: 'Try another file' })).toBeHidden();
 });

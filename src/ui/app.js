@@ -45,9 +45,9 @@ const PREFS = 'inkwell-prefs';
 /**
  * Print settings. Darkness, quality and ink saver are remembered; the rest start fresh.
  * @type {{tone: number, perSheet: 1|2|4, clean: 'auto'|'on'|'off', idCard: boolean, size: 'fit'|'actual',
- *   quality: 3|4|5, booklet: boolean, inkSaver: boolean}}
+ *   quality: 3|4|5, booklet: boolean, mini: 0|8|16, inkSaver: boolean}}
  */
-const opts = { tone: 1, perSheet: 1, clean: 'auto', idCard: false, size: 'fit', quality: 5, booklet: false, inkSaver: false };
+const opts = { tone: 1, perSheet: 1, clean: 'auto', idCard: false, size: 'fit', quality: 5, booklet: false, mini: 0, inkSaver: false };
 try {
   const p = JSON.parse(localStorage.getItem(PREFS) || '{}');
   for (const k of /** @type {const} */ (['tone', 'quality', 'inkSaver'])) if (k in p) /** @type {any} */ (opts)[k] = p[k];
@@ -60,7 +60,7 @@ function refresh() {
   const n = chosen().length;
   const plural = (/** @type {number} */ k, /** @type {string} */ w) => `${k} ${w}${k === 1 ? '' : 's'}`;
   $('copies').textContent = String(copies);
-  const what = opts.booklet ? `booklet: ${plural(n, 'side')}` : opts.perSheet > 1 ? `${plural(n, 'sheet')} (${opts.perSheet} pages each)` : plural(n, 'page');
+  const what = opts.mini ? `mini book: ${plural(n, 'side')}` : opts.booklet ? `booklet: ${plural(n, 'side')}` : opts.perSheet > 1 ? `${plural(n, 'sheet')} (${opts.perSheet} pages each)` : plural(n, 'page');
   $('summary').textContent = `${what}${copies > 1 ? ` × ${copies} copies` : ''} · ${plural(n * copies, 'sheet')}`;
   $('book').hidden = n < 2;
   /** @type {HTMLButtonElement} */ ($('print')).disabled = n === 0;
@@ -236,7 +236,7 @@ export async function prepare(file, idCard = false) {
     box.querySelectorAll('img').forEach((i) => URL.revokeObjectURL(i.src));
     box.replaceChildren();
     for (const [n, g] of res.previews.entries()) {
-      const label = `${opts.booklet ? 'Side' : opts.perSheet > 1 ? 'Sheet' : 'Page'} ${n + 1} of ${res.previews.length}`;
+      const label = `${opts.booklet || opts.mini ? 'Side' : opts.perSheet > 1 ? 'Sheet' : 'Page'} ${n + 1} of ${res.previews.length}`;
       const fig = document.createElement('div');
       fig.className = 'page';
       const open = document.createElement('button');
@@ -279,7 +279,12 @@ export function start() {
   $('choose').addEventListener('click', pick);
   $('again').addEventListener('click', pick);
   $('retry').addEventListener('click', () => show('empty'));
-  input.addEventListener('change', () => { if (input.files?.[0]) prepare(input.files[0]); });
+  input.addEventListener('change', () => {
+    const files = [...(input.files ?? [])];
+    if (files.length) prepare(files.length === 1 ? files[0] : files);
+  });
+  $('fold-test').addEventListener('click', async () => prepare(await numbered(opts.mini || 8)));
+  checkUpdate();
 
   $('print-hint').hidden = canPrintDirect();
   $('save-pdf').addEventListener('click', () => save('pdf'));
@@ -323,6 +328,8 @@ export function start() {
   document.querySelectorAll('[data-opt]').forEach((b) => b.addEventListener('click', () => {
     const { opt = '', val = '' } = /** @type {HTMLElement} */ (b).dataset;
     /** @type {any} */ (opts)[opt] = val === 'true' ? true : val === 'false' ? false : /^[\d.]+$/.test(val) ? Number(val) : val;
+    if (opt === 'mini' && opts.mini) opts.booklet = false; // one way of folding at a time
+    if (opt === 'booklet' && opts.booklet) opts.mini = 0;
     try { localStorage.setItem(PREFS, JSON.stringify({ tone: opts.tone, quality: opts.quality, inkSaver: opts.inkSaver })); } catch { /* fine */ }
     mark();
     if (opt !== 'quality' && current) prepare(current, opts.idCard); // previews always show exactly what will print
@@ -373,6 +380,52 @@ export function start() {
     if (at) showBook(at);
   });
 }
+
+/** Big page numbers, one per page: fold a test sheet before using real pages. @param {number} n */
+async function numbered(n) {
+  const pics = [];
+  for (let i = 1; i <= n; i++) {
+    const c = new OffscreenCanvas(1240, 1754);
+    const ctx = /** @type {OffscreenCanvasRenderingContext2D} */ (c.getContext('2d'));
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = '#000';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 700px sans-serif';
+    ctx.fillText(String(i), 620, 1050);
+    ctx.font = '90px sans-serif';
+    ctx.fillText('top ↑', 620, 200);
+    pics.push(await c.convertToBlob({ type: 'image/png' }));
+  }
+  if (!opts.mini) opts.mini = 8;
+  opts.booklet = false;
+  document.querySelectorAll('[data-opt="mini"]').forEach((b) => b.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (b).dataset.val === String(opts.mini))));
+  return pics;
+}
+
+/**
+ * Android app only: a newer version on GitHub shows an "Update" button. Tapping it downloads the
+ * new app; Android then asks once to install it (it never lets an app update itself silently).
+ */
+async function checkUpdate() {
+  if (!canPrintDirect()) return; // the website updates by itself
+  try {
+    const rel = await (await fetch('https://api.github.com/repos/Arindam2000/inkwell/releases/latest')).json();
+    const latest = /v(\d+\.\d+\.\d+)/.exec(rel.name ?? '')?.[1];
+    if (!latest || !newer(latest, __APP_VERSION__)) return;
+    const b = /** @type {HTMLButtonElement} */ ($('update'));
+    b.textContent = `Update ready: v${latest}`;
+    b.hidden = false;
+    b.addEventListener('click', () => { location.href = 'https://github.com/Arindam2000/inkwell/releases/latest/download/inkwell.apk'; });
+  } catch { /* offline: try next time */ }
+}
+
+/** @param {string} a @param {string} b */
+const newer = (a, b) => {
+  const [x, y] = [a, b].map((v) => v.split('.').map(Number));
+  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i];
+  return false;
+};
 
 /** A file shared from Drive/WhatsApp arrives via the service worker; open it once, then forget it. */
 async function openShared() {
