@@ -78,3 +78,6 @@
 
 - v0.21.0: Lily (Julee's puppy sister) drawn beside Julee (dog() in julee.js, mirrored, bigger head, no sweater/tongue). Bubbles: Bengali + Bengali in English letters (his choice, not Hindi). HELLO/WAIT phrase lists (5 each) pick at random; loading line changes every 2.4 s.
 
+- v0.22.0: Julee & Lily are Ghibli watercolours made in Google Flow (his account, PRO, Nano Banana 2.1; project 'Oct 17 - 00:27'). src/ui/img/{julee,lily}.jpg = crops with paper levelled to pure white; .dog uses mix-blend-mode multiply over .pups paper background. Motion: breathe, soft-masked head copy that nods, blink lids (percent positions per dog), drifting petals, page float while loading. Flow video (Frames) not done: couldn't set a start frame by automation.
+- Gotcha: the Claude app's built-in browser can't attach local files (no file_upload); Claude in Chrome has file_upload. For upload tasks, connect the Chrome extension. Localhost fetch from the pane also fails.
+
