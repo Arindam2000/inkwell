@@ -33,3 +33,9 @@
 - v0.5-0.7: share into Android app (SharedPlugin), Inkwell icon, darkness + 2 per sheet, camera scan via @capacitor-mlkit/document-scanner (FULL mode, PDF result).
 - APK now signed with a fixed key: `.keys/inkwell.p12` (git-ignored, password in `.env` INKWELL_KEY_PASS), uploaded as secrets INKWELL_KEYSTORE_B64 / INKWELL_KEY_PASS. Losing the key = users must uninstall to update; keep `.keys/` backed up.
 - Next: phone test of v0.7.0 (scan, share, signed update), then Magic Scan cleanup extras (ID card mode, show-through), then v1.0 fresh review.
+
+## Update 2026-10-16 (Magic Scan)
+- Scan lab: `python scan-lab/make_lab.py` makes 29 deterministic cases (git-ignored); `tests/scan-lab.test.js` scores them with ratchet LIMITS (never lower). Known limit: h5 dark room (no visible page edge -> no crop).
+- `src/scan/clean.js` (paper map via closing + fill non-paper, levels, despeckle, finger removal; auto = documents only), `src/scan/crop.js` (edge-bounded flood vs Otsu, line-fit corners, warp, A4 snap), `src/layout/idCard.js`.
+- Corner-drag: not built; Google scanner's gallery import already lets you drag corners in the Android app.
+- v0.10.0 APK built. Next: Arindam's real-paper check; then Ink Saver (M2).
