@@ -1,6 +1,6 @@
 # Inkwell: design spec (v1)
 
-*Working name: Inkwell. Project: Printing Envisioned. Date: 2026-10-16. Status: **DRAFT, waiting for Arindam's review.***
+*Name: Inkwell. Project: Printing Envisioned. Date: 2026-10-16. Status: **APPROVED by Arindam 2026-10-16** (English only; "made for family, no unnecessary stretch").*
 
 ---
 
@@ -19,7 +19,7 @@ It does documents first, photos second, and fun prints (mystery, posters, origam
 | **Printer** | HP LaserJet Pro MFP M126nw: black-and-white laser, 600 dpi, A4, Wi-Fi, flatbed scanner, no auto two-sided printing. |
 | **Main use** | Documents: pages photographed or scanned with Google Drive, then printed. |
 | **Pain today** | Color photos and charts print muddy. Phone photos of papers print tilted, gray and shadowy, and waste toner. |
-| **Quality bar** | Family use, **enterprise-grade quality**: tested, fast, private, never crashes, easy for anyone. |
+| **Quality bar** | **Enterprise-grade quality where the family feels it** (tested, fast, private, never crashes, easy). **No product extras** nobody in the family needs. |
 | **Money** | Free tools and free hosting only. |
 
 **Success looks like:**
@@ -95,7 +95,7 @@ Each feature lists **what it does** and **how we know it's done** (acceptance te
 - Installable app with icon; works offline after first open.
 - Appears in Android's Share menu for images and PDFs.
 - Builds exact A4 PDFs; "Print" opens Android printing.
-- Settings: printer profile, Ink Saver on/off, language.
+- Settings: Ink Saver on/off. English only.
 - **Done when:**
   - it installs on the Mi A1 and Realme 3 Pro;
   - a Drive scan shared to Inkwell prints at true A4 from both phones;
@@ -106,7 +106,7 @@ Each feature lists **what it does** and **how we know it's done** (acceptance te
   - **Tone curve:** lifts the darkest tones so they don't merge into black; keeps the lightest tones from vanishing.
   - **Minimum dot size:** 2 printer dots; finer patterns are never produced.
   - **Paper drift:** measured shift for re-fed sheets (from spike 03).
-- **"Tune my printer" flow:** print one calibration sheet, then answer 2 or 3 taps ("which is the first gray you can see?"). The profile updates. This also lets Inkwell work on any future printer.
+- The profile is measured once, by us, with one calibration sheet. No in-app tuning flow: there is one printer.
 - **Done when:** a 16-step gray ramp printed through the profile shows **≥ 15 distinct steps** (was ~12).
 
 ### 6.3 Magic Scan: documents (M1, the #1 feature)
@@ -232,13 +232,13 @@ A "session" is about 2–3 hours of AI work, ending in a save-point. These are e
    - no analytics;
    - files stay on the phone;
    - "Clear history" button.
-5. **Easy for everyone:** big buttons (≥ 48 dp), high contrast, readable text sizes, screen-reader labels, and plain words everywhere.
-6. **Safe updates:** numbered versions and a changelog. The app asks before updating. Any release can be rolled back.
-7. **Security:**
-   - strict content rules (no outside scripts at runtime);
-   - pinned dependencies with automatic security alerts.
-8. **Automatic checks:** every change runs all tests on GitHub (free tier) before it reaches the family.
+5. **Easy for everyone:** big buttons, high contrast, readable text, plain words.
+6. **Safe updates:** every release is a git save-point. If one breaks, the previous one goes back up in minutes.
+7. **Security:** no outside scripts at runtime; few, pinned dependencies.
+8. **Checks before release:** all tests run on the laptop before anything reaches the family's phones.
 9. **Clean code:** small files, each with one job. Every fixed bug gets a test.
+
+**Cut on purpose (family, not product):** an in-app printer tuning flow, multiple languages, cloud test automation, changelogs, update prompts, screen-reader work beyond plain labels.
 
 ---
 
@@ -265,11 +265,9 @@ A "session" is about 2–3 hours of AI work, ending in a save-point. These are e
 
 ---
 
-## 11. Open questions for Arindam
+## 11. Decisions (2026-10-16)
 
-| # | Question | My pick |
-|---|---|---|
-| Q1 | App name **Inkwell** OK? | yes |
-| Q2 | Languages: English only, or also Hindi / Bengali? | English first, others in M2 |
-| Q3 | OK for the **code** to sit in a public GitHub repo (needed for free hosting; no family data in it)? | yes |
-| Q4 | Run spike 03 (re-feed one sheet 3 times) and spike 04 (Mi A1 check) before M0? | yes |
+- Name: **Inkwell**. 
+- Language: **English only**.
+- Code in a **public GitHub repo** for free hosting (code only, never family data).
+- Spikes 03 and 04 run **before M0**.
