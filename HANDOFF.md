@@ -64,3 +64,5 @@
 ## Update 2026-10-16 (v0.15.0)
 - Back: '‹ Back' on the Ready screen; leaving the start screen pushes one history entry so Android's back gesture returns home (closes the big preview first) instead of exiting.
 
+- v0.16.0: '⌂ Home' button in the header on every screen except the start screen (same action as Back).
+

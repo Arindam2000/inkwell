@@ -174,3 +174,14 @@ test('Back: the button and the phone back gesture return to the start screen; ba
   await page.goBack();
   await expect(page.getByRole('button', { name: 'Choose photos or PDFs' })).toBeVisible();
 });
+
+test('Home: shown on every screen but the start, and goes straight back to it', async ({ page }) => {
+  await page.goto('./');
+  await expect(page.getByRole('button', { name: '⌂ Home' })).toBeHidden();
+  await page.locator('#file').setInputFiles(fixture('two-page.pdf'));
+  await expect(page.locator('section[data-state="ready"]')).toBeVisible({ timeout: 15000 });
+  await page.getByRole('button', { name: 'Print as a book (both sides)' }).click();
+  await page.getByRole('button', { name: '⌂ Home' }).click();
+  await expect(page.getByRole('button', { name: 'Choose photos or PDFs' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '⌂ Home' })).toBeHidden();
+});

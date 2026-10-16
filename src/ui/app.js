@@ -16,6 +16,7 @@ function show(state) {
   document.querySelectorAll('section[data-state]').forEach((s) => {
     /** @type {HTMLElement} */ (s).hidden = /** @type {HTMLElement} */ (s).dataset.state !== state;
   });
+  $('home').hidden = state === 'empty';
   // Leaving the start screen adds one history step, so the phone's Back comes home instead of closing the app.
   if (state !== 'empty' && !history.state?.inner) history.pushState({ inner: true }, '');
 }
@@ -297,7 +298,10 @@ export function start() {
   $('choose').addEventListener('click', pick);
   $('again').addEventListener('click', pick);
   $('retry').addEventListener('click', () => show('empty'));
-  $('back').addEventListener('click', () => { history.replaceState(null, ''); show('empty'); }); // no waiting on the history: a quick next pick can't be undone
+  // Back and Home: straight to the start screen, without waiting on the history (a quick next pick can't be undone).
+  const home = () => { history.replaceState(null, ''); show('empty'); };
+  $('back').addEventListener('click', home);
+  $('home').addEventListener('click', home);
   addEventListener('popstate', back);
   input.addEventListener('change', () => {
     const files = [...(input.files ?? [])];
