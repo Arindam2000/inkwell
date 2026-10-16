@@ -4,13 +4,13 @@
  * What the family's printer can and can't do, measured on paper.
  * curve: [input, output] pairs (0 = black, 1 = white). Lifts the darkest tones so they
  * don't merge into black, and keeps the lightest from vanishing.
- * Values: spike-01 estimate; replaced by spike-03 ramp readings.
+ * Values: spike-03 ramp (first step apart from black = 4/31, last apart from white = 25/31).
  */
 export const HP_M126NW = {
   name: 'HP LaserJet Pro MFP M126nw',
   dpi: 600,
   minDot: 2,
-  curve: [[0, 0], [0.06, 0.22], [0.94, 0.86], [1, 1]],
+  curve: [[0, 0], [0.06, 0.13], [0.94, 0.81], [1, 1]],
   /** @type {{xMm: number, yMm: number} | null} */
   drift: null,
 };
