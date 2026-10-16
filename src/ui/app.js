@@ -310,7 +310,7 @@ function guard(btn, working, action) {
 }
 
 /** Phone Back in the Android app (MainActivity asks): true if Inkwell went back a step, false to leave the app. */
-/** @type {any} */ (window).inkwellBack = () => {
+/** @type {any} */ (globalThis).inkwellBack = () => {
   if (!$('viewer').hidden) { $('viewer').hidden = true; return true; }
   if (!document.querySelector('section[data-state="empty"]')?.hasAttribute('hidden')) return false;
   history.replaceState(null, '');
