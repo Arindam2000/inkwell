@@ -16,7 +16,22 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // One fixed signing key (from a GitHub secret), so each new app file installs over the old one.
+    signingConfigs {
+        inkwell {
+            if (System.getenv('INKWELL_KEYSTORE')) {
+                storeFile file(System.getenv('INKWELL_KEYSTORE'))
+                storeType 'pkcs12'
+                storePassword System.getenv('INKWELL_KEY_PASS')
+                keyAlias 'inkwell'
+                keyPassword System.getenv('INKWELL_KEY_PASS')
+            }
+        }
+    }
     buildTypes {
+        debug {
+            if (System.getenv('INKWELL_KEYSTORE')) signingConfig signingConfigs.inkwell
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

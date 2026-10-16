@@ -19,8 +19,13 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build:app
-      # ponytail: debug-signed; each build's key differs, so installing an update may need an uninstall first. Add a fixed keystore secret when that annoys.
-      - run: chmod +x android/gradlew && cd android && ./gradlew assembleDebug --no-daemon
+      - name: Build (signed with the fixed Inkwell key, so updates install over the old app)
+        env:
+          KEYSTORE_B64: ${{ secrets.INKWELL_KEYSTORE_B64 }}
+          INKWELL_KEY_PASS: ${{ secrets.INKWELL_KEY_PASS }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/inkwell.p12"; export INKWELL_KEYSTORE="$RUNNER_TEMP/inkwell.p12"; fi
+          chmod +x android/gradlew && cd android && ./gradlew assembleDebug --no-daemon
       - run: cp android/app/build/outputs/apk/debug/app-debug.apk inkwell.apk
       - env: { GH_TOKEN: "${{ github.token }}" }
         run: |
