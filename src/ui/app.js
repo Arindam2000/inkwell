@@ -62,4 +62,18 @@ export function start() {
   $('again').addEventListener('click', pick);
   $('retry').addEventListener('click', () => show('empty'));
   input.addEventListener('change', () => { if (input.files?.[0]) prepare(input.files[0]); });
+  openShared();
+}
+
+/** A file shared from Drive/WhatsApp arrives via the service worker; open it once, then forget it. */
+async function openShared() {
+  if (new URLSearchParams(location.search).get('shared') !== '1') return;
+  history.replaceState(null, '', location.pathname);
+  const cache = await caches.open('inkwell-shared');
+  const key = import.meta.env.BASE_URL + 'shared-file';
+  const res = await cache.match(key);
+  if (!res) return;
+  const blob = await res.blob();
+  await cache.delete(key);
+  await prepare(blob);
 }
