@@ -15,6 +15,23 @@ const HOST_KEY = 'inkwell-printer';
 
 export const canPrintDirect = () => Capacitor.isNativePlatform();
 
+/**
+ * Android app only: Google's on-device document scanner (edges, crop, auto enhance, stain removal,
+ * several pages). Returns the scan as one PDF, or null if the person backed out.
+ * @returns {Promise<Blob | null>}
+ */
+export async function scanWithCamera() {
+  const { DocumentScanner } = await import('@capacitor-mlkit/document-scanner');
+  try {
+    const { pdf } = await DocumentScanner.scanDocument({ scannerMode: 'FULL', resultFormats: 'PDF', galleryImportAllowed: true, pageLimit: 30 });
+    if (!pdf) return null;
+    return await (await fetch(Capacitor.convertFileSrc(pdf.uri))).blob();
+  } catch (e) {
+    if (/cancel/i.test(String(/** @type {Error} */ (e).message))) return null;
+    throw new InkwellError("The scanner didn't open.", 'Update Google Play services, or choose a photo instead.');
+  }
+}
+
 /** Android app only: a file shared to Inkwell (android/.../SharedPlugin.java). @type {any} */
 const Shared = registerPlugin('Shared');
 

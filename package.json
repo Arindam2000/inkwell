@@ -1,7 +1,7 @@
 {
   "name": "inkwell",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.7.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,6 +13,7 @@
     "build:app": "vite build --mode app && cap sync android"
   },
   "dependencies": {
+    "@capacitor-mlkit/document-scanner": "8.2.1",
     "@capacitor/android": "8.5.2",
     "@capacitor/core": "8.5.2",
     "pdfjs-dist": "6.3.289"

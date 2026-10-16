@@ -3,7 +3,7 @@ import { assemblePdf } from '../pdf/writePdf.js';
 import { DPI } from '../pipeline/pipeline.js';
 import { run } from '../pipeline/run.js';
 import { batches, bookOrder, packPages, unpackPages } from '../print/book.js';
-import { canPrintDirect, onSharedFile, printDirect } from '../print/direct.js';
+import { canPrintDirect, onSharedFile, printDirect, scanWithCamera } from '../print/direct.js';
 
 /** @typedef {import('../image/types.js').Gray} Gray */
 /** @typedef {import('../pipeline/run.js').Page} Page */
@@ -214,6 +214,16 @@ export function start() {
   input.addEventListener('change', () => { if (input.files?.[0]) prepare(input.files[0]); });
 
   $('print-hint').hidden = canPrintDirect();
+  $('scan').hidden = !canPrintDirect();
+  $('scan').addEventListener('click', async () => {
+    try {
+      const scan = await scanWithCamera();
+      if (scan) prepare(scan);
+    } catch (e) {
+      const err = /** @type {InkwellError} */ (e);
+      note(`${err.message} ${err.hint}`);
+    }
+  });
   /** Show the chosen button in each group as pressed. */
   const mark = () => {
     document.querySelectorAll('[data-tone]').forEach((b) => b.setAttribute('aria-pressed', String(Number(/** @type {HTMLElement} */ (b).dataset.tone) === opts.tone)));
