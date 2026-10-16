@@ -3,9 +3,10 @@ import { defineConfig } from 'vite';
 
 const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
 
-export default defineConfig({
-  base: '/inkwell/',
-  build: { manifest: true },
+// mode 'app' = the Android app build (served from the app itself, at /).
+export default defineConfig(({ mode }) => ({
+  base: mode === 'app' ? '/' : '/inkwell/',
+  build: { manifest: true, outDir: mode === 'app' ? 'dist-app' : 'dist' },
   define: { __APP_VERSION__: JSON.stringify(version) },
   test: { include: ['tests/**/*.test.js'] },
-});
+}));

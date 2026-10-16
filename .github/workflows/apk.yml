@@ -1,0 +1,28 @@
+# Builds the Android app on GitHub (no Android tools needed on the laptop)
+# and publishes it at releases/latest/download/inkwell.apk for the phones.
+name: Android app
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:app
+      # ponytail: debug-signed; each build's key differs, so installing an update may need an uninstall first. Add a fixed keystore secret when that annoys.
+      - run: chmod +x android/gradlew && cd android && ./gradlew assembleDebug --no-daemon
+      - run: cp android/app/build/outputs/apk/debug/app-debug.apk inkwell.apk
+      - env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          gh release delete app-latest --yes --cleanup-tag || true
+          gh release create app-latest inkwell.apk --title "Inkwell Android app" --notes "Built from ${GITHUB_SHA::7}" --latest

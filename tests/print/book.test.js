@@ -37,3 +37,10 @@ test('assemblePdf: blank pages and 180° turns', async () => {
   expect(blank.view[2]).toBeCloseTo((30 / 300) * 72, 1); // same size as its neighbours
   expect((await blank.getOperatorList()).fnArray).not.toContain(85); // 85 = paintImageXObject
 });
+
+test('back pages survive packing (blank and turned pages too)', async () => {
+  const { packPages, unpackPages } = await import('../../src/print/book.js');
+  const a = { width: 3, height: 2, bytes: new Uint8Array([1, 2, 3]), rotate: true };
+  const b = { width: 3, height: 2, bytes: new Uint8Array([9, 8]), rotate: false };
+  expect(unpackPages(packPages([null, a, b]))).toEqual([null, a, b]);
+});

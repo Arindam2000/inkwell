@@ -2,7 +2,8 @@ import { InkwellError } from '../errors.js';
 import { assemblePdf } from '../pdf/writePdf.js';
 import { DPI } from '../pipeline/pipeline.js';
 import { run } from '../pipeline/run.js';
-import { bookOrder } from '../print/book.js';
+import { bookOrder, packPages, unpackPages } from '../print/book.js';
+import { canPrintDirect, printDirect } from '../print/direct.js';
 
 /** @typedef {import('../image/types.js').Gray} Gray */
 /** @typedef {import('../pipeline/run.js').Page} Page */
@@ -61,10 +62,26 @@ async function handOver(bytes, name) {
   setTimeout(() => URL.revokeObjectURL(a.href), 60_000);
 }
 
+/**
+ * Print: in the Android app, straight to the printer; in Chrome, hand a PDF to a print app.
+ * @param {(Page & {rotate?: boolean} | null)[]} list @param {string} name
+ */
+async function output(list, name) {
+  if (!canPrintDirect()) return handOver(assemblePdf(list, DPI), `${name}.pdf`);
+  try {
+    note('Sending to the printer…');
+    await printDirect(list, DPI, name, (n) => note(`Sending to the printer… page ${n} of ${list.length}`));
+    note('Printing ✓');
+  } catch (e) {
+    const err = e instanceof InkwellError ? e : new InkwellError("Couldn't print.", 'Try again.');
+    note(`${err.message} ${err.hint}`);
+  }
+}
+
 /** Step 2 waits in storage, so closing the app between passes loses nothing. */
-async function backPdf() {
+async function backPages() {
   const res = await (await caches.open(SHARED)).match(BACK_KEY);
-  return res ? new Uint8Array(await res.arrayBuffer()) : null;
+  return res ? unpackPages(new Uint8Array(await res.arrayBuffer())) : null;
 }
 
 async function endBook() {
@@ -116,7 +133,8 @@ export function start() {
   $('retry').addEventListener('click', () => show('empty'));
   input.addEventListener('change', () => { if (input.files?.[0]) prepare(input.files[0]); });
 
-  $('print').addEventListener('click', () => handOver(assemblePdf(pages, DPI), 'inkwell.pdf'));
+  $('print-hint').hidden = canPrintDirect();
+  $('print').addEventListener('click', () => output(pages, 'inkwell'));
   $('book').addEventListener('click', () => {
     const n = Math.ceil(pages.length / 2);
     $('sheets').textContent = `It uses ${n} sheet${n > 1 ? 's' : ''}.`;
@@ -124,18 +142,18 @@ export function start() {
   });
   $('book-front').addEventListener('click', () => {
     const { front } = bookOrder(pages.length, bookSettings());
-    handOver(assemblePdf(front.map((i) => pages[i]), DPI), 'inkwell-front.pdf');
+    output(front.map((i) => pages[i]), 'inkwell-front');
   });
   $('book-next').addEventListener('click', async () => {
     const { reverse, rotate } = bookSettings();
     const { back } = bookOrder(pages.length, { reverse });
-    const pdf = assemblePdf(back.map((i) => (i === null ? null : { ...pages[i], rotate })), DPI);
-    await (await caches.open(SHARED)).put(BACK_KEY, new Response(/** @type {BlobPart} */ (pdf)));
+    const packed = packPages(back.map((i) => (i === null ? null : { ...pages[i], rotate })));
+    await (await caches.open(SHARED)).put(BACK_KEY, new Response(/** @type {BlobPart} */ (packed)));
     show('book-back');
   });
   $('book-back').addEventListener('click', async () => {
-    const pdf = await backPdf();
-    if (pdf) handOver(pdf, 'inkwell-back.pdf');
+    const back = await backPages();
+    if (back) output(back, 'inkwell-back');
   });
   $('book-done').addEventListener('click', async () => { await endBook(); show('book-check'); });
   const cancel = async () => { await endBook(); show(pages.length ? 'ready' : 'empty'); };
@@ -156,7 +174,7 @@ export function start() {
   $('fix-turn').addEventListener('click', () => fix('rotate'));
   $('fix-order').addEventListener('click', () => fix('reverse'));
 
-  openShared().then(async (opened) => { if (!opened && await backPdf()) show('book-back'); });
+  openShared().then(async (opened) => { if (!opened && await backPages()) show('book-back'); });
 }
 
 /** A file shared from Drive/WhatsApp arrives via the service worker; open it once, then forget it. */

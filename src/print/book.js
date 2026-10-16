@@ -17,3 +17,34 @@ export function bookOrder(n, { reverse = true } = {}) {
   if (reverse) back.reverse();
   return { front, back };
 }
+
+/** @typedef {{width: number, height: number, bytes: Uint8Array, rotate?: boolean}} Page */
+
+/**
+ * Pack the back pages into one blob, so step 2 survives the app closing.
+ * Layout: 4-byte header length, JSON header, then each page's bytes.
+ * @param {(Page | null)[]} pages @returns {Uint8Array}
+ */
+export function packPages(pages) {
+  const head = new TextEncoder().encode(JSON.stringify(pages.map((p) => p && { w: p.width, h: p.height, n: p.bytes.length, r: !!p.rotate })));
+  const out = new Uint8Array(4 + head.length + pages.reduce((s, p) => s + (p ? p.bytes.length : 0), 0));
+  new DataView(out.buffer).setUint32(0, head.length);
+  out.set(head, 4);
+  let at = 4 + head.length;
+  for (const p of pages) if (p) { out.set(p.bytes, at); at += p.bytes.length; }
+  return out;
+}
+
+/** @param {Uint8Array} u @returns {(Page | null)[]} */
+export function unpackPages(u) {
+  const len = new DataView(u.buffer, u.byteOffset).getUint32(0);
+  /** @type {({w: number, h: number, n: number, r: boolean} | null)[]} */
+  const head = JSON.parse(new TextDecoder().decode(u.subarray(4, 4 + len)));
+  let at = 4 + len;
+  return head.map((m) => {
+    if (!m) return null;
+    const bytes = u.slice(at, at + m.n);
+    at += m.n;
+    return { width: m.w, height: m.h, bytes, rotate: m.r };
+  });
+}

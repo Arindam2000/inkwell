@@ -9,12 +9,16 @@
     "test": "vitest run",
     "check": "tsc --noEmit -p jsconfig.json",
     "e2e": "playwright test",
-    "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy.ps1 dist"
+    "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy.ps1 dist",
+    "build:app": "vite build --mode app && cap sync android"
   },
   "dependencies": {
+    "@capacitor/android": "8.5.2",
+    "@capacitor/core": "8.5.2",
     "pdfjs-dist": "6.3.289"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.5.2",
     "@playwright/test": "1.63.0",
     "typescript": "7.0.2",
     "vite": "8.3.1",

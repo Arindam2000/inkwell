@@ -1,0 +1,8 @@
+{
+  "appId": "io.github.arindam2000.inkwell",
+  "appName": "Inkwell",
+  "webDir": "dist-app",
+  "android": {
+    "allowMixedContent": false
+  }
+}
