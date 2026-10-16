@@ -2,6 +2,7 @@ import { InkwellError } from '../errors.js';
 import { readFile } from '../input/readFile.js';
 
 /** @typedef {import('../image/types.js').Gray} Gray */
+/** @typedef {{width: number, height: number, bytes: Uint8Array}} Page */
 
 const PAGE_TIMEOUT_MS = 20_000;
 const TOO_SLOW = () => new InkwellError('This took too long.', 'Try a smaller photo or fewer pages.');
@@ -11,7 +12,7 @@ const BROKE = () => new InkwellError('Something went wrong while preparing the p
  * Prepare a file for printing in a background worker, so the screen never freezes.
  * @param {Blob} file
  * @param {(done: number, total: number | null) => void} onProgress
- * @returns {Promise<{pdf: Uint8Array, previews: Gray[], tonerPct: number}>}
+ * @returns {Promise<{pdf: Uint8Array, pages: Page[], previews: Gray[], tonerPct: number}>}
  */
 export async function run(file, onProgress) {
   const worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
@@ -33,8 +34,8 @@ export async function run(file, onProgress) {
       previews.push(r.preview);
       onProgress(previews.length, null);
     }
-    const done = /** @type {{pdf: Uint8Array, tonerPct: number}} */ (await ask({ type: 'finish' }, []));
-    return { pdf: done.pdf, previews, tonerPct: done.tonerPct };
+    const done = /** @type {{pdf: Uint8Array, pages: Page[], tonerPct: number}} */ (await ask({ type: 'finish' }, []));
+    return { pdf: done.pdf, pages: done.pages, previews, tonerPct: done.tonerPct };
   } finally {
     worker.terminate();
   }

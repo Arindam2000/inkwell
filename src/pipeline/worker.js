@@ -11,9 +11,9 @@ self.onmessage = async (/** @type {MessageEvent} */ e) => {
       const { preview, tonerPct } = await job.add(msg.gray);
       self.postMessage({ type: 'page', preview, tonerPct }, { transfer: [preview.data.buffer] });
     } else if (msg.type === 'finish') {
-      const { pdf, tonerPct } = job.finish();
+      const { pdf, pages, tonerPct } = job.finish();
       job = new Job(HP_M126NW);
-      self.postMessage({ type: 'pdf', pdf, tonerPct }, { transfer: [pdf.buffer] });
+      self.postMessage({ type: 'pdf', pdf, pages, tonerPct }, { transfer: [pdf.buffer, ...pages.map((p) => p.bytes.buffer)] });
     }
   } catch (err) {
     self.postMessage({ type: 'error', message: String(err) });

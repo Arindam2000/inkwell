@@ -29,7 +29,8 @@ export async function writePdf(pages, dpi) {
 }
 
 /**
- * @param {{width: number, height: number, bytes: Uint8Array}[]} pages already compressed
+ * @param {({width: number, height: number, bytes: Uint8Array, rotate?: boolean} | null)[]} pages
+ *   already compressed; null = blank page (sized like the page before it); rotate = turn 180°
  * @param {number} dpi
  * @returns {Uint8Array}
  */
@@ -39,14 +40,20 @@ export function assemblePdf(pages, dpi) {
   const kids = [];
   objs.push(['<< /Type /Catalog /Pages 2 0 R >>']);
   objs.push([]); // pages tree, filled below
+  let dims = pages.find((p) => p) ?? { width: 2480, height: 3508 }; // A4 at 300 dpi
   for (const p of pages) {
-    const w = ((p.width / dpi) * 72).toFixed(2);
-    const h = ((p.height / dpi) * 72).toFixed(2);
+    if (p) dims = p;
+    const w = ((dims.width / dpi) * 72).toFixed(2);
+    const h = ((dims.height / dpi) * 72).toFixed(2);
     const pageId = objs.length + 1;
+    kids.push(`${pageId} 0 R`);
+    if (!p) {
+      objs.push([`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w} ${h}] /Resources << >> >>`]);
+      continue;
+    }
     const content = `q ${w} 0 0 ${h} 0 0 cm /Im0 Do Q`;
     const data = p.bytes;
-    kids.push(`${pageId} 0 R`);
-    objs.push([`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w} ${h}] /Resources << /XObject << /Im0 ${pageId + 1} 0 R >> >> /Contents ${pageId + 2} 0 R >>`]);
+    objs.push([`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w} ${h}]${p.rotate ? ' /Rotate 180' : ''} /Resources << /XObject << /Im0 ${pageId + 1} 0 R >> >> /Contents ${pageId + 2} 0 R >>`]);
     objs.push([`<< /Type /XObject /Subtype /Image /Width ${p.width} /Height ${p.height} /ColorSpace /DeviceGray /BitsPerComponent 8 /Interpolate false /Filter /FlateDecode /Length ${data.length} >>\nstream\n`, data, '\nendstream']);
     objs.push([`<< /Length ${content.length} >>\nstream\n${content}\nendstream`]);
   }

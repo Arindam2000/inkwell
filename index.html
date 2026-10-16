@@ -17,6 +17,7 @@
     <p class="tag">Clean prints. Less toner.</p>
   </header>
   <main id="app">
+    <p class="note" id="note" hidden></p>
     <section data-state="empty">
       <button id="choose" class="big">Choose a photo or PDF</button>
       <p class="hint">Or share from Drive → Inkwell</p>
@@ -26,8 +27,34 @@
     </section>
     <section data-state="ready" hidden>
       <p class="toner" id="toner"></p>
+      <button id="print" class="big">Print</button>
+      <button id="book" class="big quiet">Print as a book (both sides)</button>
+      <p class="hint">Pick your print app, then set scale to 100% (Actual size).</p>
       <div id="previews"></div>
       <button id="again" class="big quiet">Choose another file</button>
+    </section>
+    <section data-state="book-front" hidden>
+      <h2>Book print · Step 1 of 2</h2>
+      <p>Print the front pages (1, 3, 5…). <span id="sheets"></span></p>
+      <button id="book-front" class="big">Print front pages</button>
+      <button id="book-next" class="big quiet">Done, the sheets are out</button>
+      <button id="book-cancel" class="link">Cancel book print</button>
+    </section>
+    <section data-state="book-back" hidden>
+      <h2>Book print · Step 2 of 2</h2>
+      <ol class="steps">
+        <li>Take the stack out <b>as it is</b>. Don't flip it, don't shuffle it.</li>
+        <li>Put it in the tray <b>blank side up</b>, top edge going in first.</li>
+      </ol>
+      <button id="book-back" class="big">Print back pages</button>
+      <button id="book-done" class="big quiet">Done, check the pages</button>
+      <button id="book-cancel2" class="link">Cancel book print</button>
+    </section>
+    <section data-state="book-check" hidden>
+      <h2>How did the backs come out?</h2>
+      <button id="fix-ok" class="big">Perfect</button>
+      <button id="fix-turn" class="big quiet">Backs are upside down</button>
+      <button id="fix-order" class="big quiet">Pages are in the wrong order</button>
     </section>
     <section data-state="error" hidden>
       <p class="error" id="err-msg"></p>

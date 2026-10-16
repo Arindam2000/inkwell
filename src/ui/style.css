@@ -5,7 +5,7 @@ body { margin: 0; background: var(--paper); color: var(--ink); font: 18px/1.45 s
 header { padding: 28px 20px 8px; }
 h1 { margin: 0; font-size: 34px; letter-spacing: -0.5px; }
 .tag { margin: 2px 0 0; color: var(--muted); }
-main { padding: 16px 20px 40px; max-width: 560px; }
+main { padding: 16px 20px 40px; max-width: 560px; display: flex; flex-direction: column; gap: 14px; }
 section { display: flex; flex-direction: column; gap: 14px; }
 .big { min-height: 56px; width: 100%; border: 0; border-radius: 14px; background: var(--ink); color: var(--paper); font-family: inherit; font-size: 19px; font-weight: 600; line-height: 1; padding: 0 20px; }
 .big:active { transform: scale(0.98); }
@@ -18,3 +18,7 @@ section { display: flex; flex-direction: column; gap: 14px; }
 .error { margin: 16px 0 0; font-size: 20px; font-weight: 600; }
 footer { padding: 0 20px 24px; }
 #about { margin: 0; font-size: 13px; color: var(--muted); }
+h2 { margin: 0; font-size: 22px; }
+.steps { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
+.note { margin: 0; padding: 10px 14px; border-radius: 10px; background: #f1ecdc; }
+.link { min-height: 48px; border: 0; background: none; color: var(--muted); font: inherit; text-decoration: underline; }

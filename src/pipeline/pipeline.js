@@ -35,7 +35,7 @@ export class Job {
   }
 
   finish() {
-    return { pdf: assemblePdf(this.pages, DPI), tonerPct: this.tonerSum / Math.max(1, this.pages.length) };
+    return { pdf: assemblePdf(this.pages, DPI), pages: this.pages, tonerPct: this.tonerSum / Math.max(1, this.pages.length) };
   }
 }
 
