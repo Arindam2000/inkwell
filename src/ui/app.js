@@ -192,6 +192,17 @@ async function pixels(p) {
   return { width: p.width, height: p.height, data: new Uint8Array(await new Response(stream).arrayBuffer()) };
 }
 
+/**
+ * Memory for the pages on screen, so nothing is made twice: big previews (page → picture) and saved
+ * files (PDF or pictures, per set of skipped pages). Emptied when the pages change.
+ */
+const made = { big: /** @type {Map<number, string>} */ (new Map()), files: /** @type {Map<string, {name: string, type: string, bytes: Uint8Array}[]>} */ (new Map()) };
+function forget() {
+  made.big.forEach((url) => URL.revokeObjectURL(url));
+  made.big.clear();
+  made.files.clear();
+}
+
 let viewing = 0;
 /** Full-screen preview of page n: exactly what will print. @param {number} n */
 async function view(n) {
@@ -201,10 +212,9 @@ async function view(n) {
   $('viewer-cap').textContent = `Page ${shown + 1} of ${pages.length}${skipped.has(shown) ? ' · Skipped' : ''}`;
   $('v-skip').textContent = skipped.has(shown) ? 'Print this page' : 'Skip this page';
   const img = /** @type {HTMLImageElement} */ ($('viewer-img'));
-  const url = await toImageUrl(shrinkToHeight(await pixels(pages[shown]), 1600));
-  if (shown !== viewing) return URL.revokeObjectURL(url); // the person already moved on
-  if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
-  img.src = url;
+  let url = made.big.get(shown);
+  if (!url) made.big.set(shown, (url = await toImageUrl(shrinkToHeight(await pixels(pages[shown]), 1600))));
+  if (shown === viewing) img.src = url; // else the person already moved on (the picture stays remembered)
 }
 
 /**
@@ -213,14 +223,15 @@ async function view(n) {
  */
 async function save(kind, /** @type {HTMLElement} */ btn) {
   const list = chosen();
-  /** @type {{name: string, type: string, bytes: Uint8Array}[]} */
-  const files = [];
-  if (kind === 'pdf') files.push({ name: 'inkwell.pdf', type: 'application/pdf', bytes: assemblePdf(list, DPI) });
+  const key = `${kind}|${[...skipped].sort((a, b) => a - b)}`;
+  const files = made.files.get(key) ?? [];
+  if (files.length) { /* made before: hand it over again straight away */ } else if (kind === 'pdf') files.push({ name: 'inkwell.pdf', type: 'application/pdf', bytes: assemblePdf(list, DPI) });
   else for (const [i, p] of list.entries()) {
     btn.textContent = `Saving ${i + 1} of ${list.length}…`;
     const jpg = await toImage(await pixels(p), 'image/jpeg');
     files.push({ name: `inkwell-${i + 1}.jpg`, type: 'image/jpeg', bytes: new Uint8Array(await jpg.arrayBuffer()) });
   }
+  made.files.set(key, files);
   if (canPrintDirect()) return sendFiles(files);
   for (const f of files) {
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([/** @type {BlobPart} */ (f.bytes)], { type: f.type })), download: f.name });
@@ -233,7 +244,7 @@ async function save(kind, /** @type {HTMLElement} */ btn) {
 export async function prepare(file, idCard = false) {
   // A setting changed on screen: stay put and update in place instead of a full "getting ready" screen.
   const again = file === current && !(/** @type {HTMLElement} */ (document.querySelector('section[data-state="ready"]'))).hidden;
-  if (file !== current) copies = 1;
+  if (file !== current) { copies = 1; results.clear(); }
   current = file;
   opts.idCard = idCard;
   if (busy) { redo = true; return; } // taps while working: only the latest settings get prepared
@@ -242,7 +253,15 @@ export async function prepare(file, idCard = false) {
   if (again) $('app').classList.add('busy'); else show('working');
   status.textContent = 'Getting it ready…';
   try {
-    const res = await run(file, (done) => { status.textContent = `Getting it ready… page ${done}`; }, opts);
+    // Settings tried before on this file (Darker, then back to Normal) come back instantly.
+    const key = JSON.stringify({ ...opts, quality: 0 });
+    let res = results.get(key);
+    if (!res) {
+      res = await run(file, (done) => { status.textContent = `Getting it ready… page ${done}`; }, opts);
+      results.set(key, res);
+      if (results.size > 6) results.delete(/** @type {string} */ (results.keys().next().value)); // ponytail: oldest out, 6 is plenty for toggling
+    }
+    forget();
     pages = res.pages;
     skipped.clear();
     $('note').hidden = true;
@@ -289,6 +308,8 @@ export async function prepare(file, idCard = false) {
   }
 }
 let busy = false, redo = false;
+/** Prepared results for the file on screen, by settings. @type {Map<string, Awaited<ReturnType<typeof run>>>} */
+const results = new Map();
 
 /**
  * A slow button: while it works it reads e.g. "Saving…" and further taps are ignored,

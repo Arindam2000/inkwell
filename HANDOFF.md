@@ -70,3 +70,5 @@
 
 - Gotcha: when checking `npm test`, look for 'Failed Suites' too. A module that won't load (e.g. top-level `window` in app.js, imported by tests/smoke.test.js) drops the count by one instead of showing a failed test. Use globalThis.
 
+- v0.18.0 memory (src/ui/app.js): 'made' = big previews + saved files (per kind + skipped set), emptied on new pages; 'results' = last 6 prepared results for this file by settings (quality ignored), emptied on a new file. Plus the worker's cleaned-page cache (v0.14).
+

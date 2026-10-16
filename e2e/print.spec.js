@@ -207,3 +207,22 @@ test('app Back (Android asks the page): preview first, then pages, then lets the
   await expect(page.getByRole('button', { name: 'Choose photos or PDFs' })).toBeVisible();
   expect(await back()).toBe(false);
 });
+
+test('memory: saving again reuses the pictures; going back to an earlier setting is instant', async ({ page }) => {
+  await open2(page);
+  const files = [];
+  page.on('download', (d) => files.push(d.suggestedFilename()));
+  await page.getByRole('button', { name: 'Save as image' }).click();
+  await expect.poll(() => files.length).toBe(2);
+  let t = Date.now();
+  await page.getByRole('button', { name: 'Save as image' }).click();
+  await expect.poll(() => files.length).toBe(4);
+  expect(Date.now() - t).toBeLessThan(1500);
+  await page.getByRole('button', { name: 'Darker' }).click();
+  await expect(page.locator('#summary')).toHaveText('2 pages · 2 sheets', { timeout: 15000 });
+  t = Date.now();
+  await page.getByRole('button', { name: 'Normal' }).click();
+  await expect(page.locator('#summary')).toHaveText('2 pages · 2 sheets');
+  await expect(page.locator('#app')).not.toHaveClass(/busy/);
+  expect(Date.now() - t).toBeLessThan(1500);
+});
