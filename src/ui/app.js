@@ -56,6 +56,8 @@ export async function prepare(file) {
 }
 
 export function start() {
+  const chrome = /Chrome\/(\d+)/.exec(navigator.userAgent)?.[1] ?? '?';
+  $('about').textContent = `Inkwell v${__APP_VERSION__} · Chrome ${chrome}`;
   const input = /** @type {HTMLInputElement} */ ($('file'));
   const pick = () => { input.value = ''; input.click(); };
   $('choose').addEventListener('click', pick);

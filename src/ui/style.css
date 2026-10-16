@@ -16,3 +16,5 @@ section { display: flex; flex-direction: column; gap: 14px; }
 #previews { display: flex; flex-direction: column; gap: 12px; }
 .preview { width: 100%; height: auto; background: #fff; border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 2px 10px rgb(0 0 0 / 0.06); }
 .error { margin: 16px 0 0; font-size: 20px; font-weight: 600; }
+footer { padding: 0 20px 24px; }
+#about { margin: 0; font-size: 13px; color: var(--muted); }

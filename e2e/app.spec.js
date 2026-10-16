@@ -40,3 +40,8 @@ test('only one screen state is visible at a time', async ({ page }) => {
   await expect(page.getByText('Getting it ready…')).toBeHidden();
   await expect(page.getByRole('button', { name: 'Try another file' })).toBeHidden();
 });
+
+test('footer shows app version and browser version (for support)', async ({ page }) => {
+  await page.goto('./');
+  await expect(page.locator('#about')).toHaveText(/^Inkwell v\d+\.\d+\.\d+ · Chrome \d+$/);
+});
