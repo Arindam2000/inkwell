@@ -6,7 +6,7 @@ import { HP_M126NW, applyCurve } from '../../src/printer/profile.js';
 const flat = (v, w = 50, h = 70) => ({ width: w, height: h, data: new Uint8Array(w * h).fill(v) });
 
 test('processPage gives A4 with the printer curve applied', () => {
-  const out = processPage(flat(128), HP_M126NW);
+  const out = processPage(flat(128), HP_M126NW, { clean: 'off' });
   expect([out.width, out.height]).toEqual([2480, 3508]);
   const expected = applyCurve(flat(128, 1, 1), HP_M126NW.curve).data[0];
   expect(out.data[1754 * 2480 + 1240]).toBe(expected);
@@ -17,7 +17,7 @@ test('processes pages sequentially', async () => {
   async function* pages() {
     for (let i = 1; i <= 20; i++) { log.push(`pull ${i}`); yield flat(200); }
   }
-  const res = await processAll(pages(), HP_M126NW, (done) => log.push(`done ${done}`));
+  const res = await processAll(pages(), HP_M126NW, (done) => log.push(`done ${done}`), { clean: 'off' });
   const expected = [];
   for (let i = 1; i <= 20; i++) expected.push(`pull ${i}`, `done ${i}`);
   expect(log).toEqual(expected);
@@ -29,15 +29,15 @@ test('processes pages sequentially', async () => {
 });
 
 test('darker / lighter shift mid-grays, keep black and white', () => {
-  const mid = (tone) => processPage(flat(128), HP_M126NW, { tone }).data[1754 * 2480 + 1240];
+  const mid = (tone) => processPage(flat(128), HP_M126NW, { tone, clean: 'off' }).data[1754 * 2480 + 1240];
   expect(mid(0.8)).toBeGreaterThan(mid(1)); // lighter
   expect(mid(1.25)).toBeLessThan(mid(1)); // darker
-  expect(processPage(flat(255), HP_M126NW, { tone: 1.25 }).data[0]).toBe(255);
+  expect(processPage(flat(255), HP_M126NW, { tone: 1.25, clean: 'off' }).data[0]).toBe(255);
 });
 
 test('2 pages per sheet: page 1 on top, page 2 below, an odd last page shares with blank', async () => {
   async function* pages() { yield flat(0); yield flat(255); yield flat(0); }
-  const res = await processAll(pages(), HP_M126NW, () => {}, { perSheet: 2 });
+  const res = await processAll(pages(), HP_M126NW, () => {}, { perSheet: 2, clean: 'off' });
   expect(res.pages).toHaveLength(2);
   expect(res.previews).toHaveLength(2);
   const p = res.previews[0];

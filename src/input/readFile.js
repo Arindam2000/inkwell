@@ -52,7 +52,7 @@ export async function* readFile(file, { pdfDpi = 200, maxPixels = 24_000_000 } =
     const w = Math.floor(bmp.width * s), h = Math.floor(bmp.height * s);
     const g = grayOf(bmp, w, h);
     bmp.close();
-    yield g;
+    yield { ...g, photo: true }; // a photo may show the page on a table: crop it
     return;
   }
   if (k !== 'pdf') throw UNKNOWN();

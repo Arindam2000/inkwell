@@ -6,3 +6,5 @@ test-results/
 playwright-report/
 dist-app/
 .keys/
+scan-lab/cases/
+scan-lab/peek-*.png

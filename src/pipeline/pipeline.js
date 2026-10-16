@@ -3,6 +3,8 @@ import { shrinkToHeight } from '../image/shrink.js';
 import { fitA4 } from '../layout/fitA4.js';
 import { assemblePdf, compressPage } from '../pdf/writePdf.js';
 import { applyCurve } from '../printer/profile.js';
+import { cleanScan } from '../scan/clean.js';
+import { cropPage } from '../scan/crop.js';
 
 /** @typedef {import('../image/types.js').Gray} Gray */
 /** @typedef {typeof import('../printer/profile.js').HP_M126NW} Profile */
@@ -10,12 +12,27 @@ import { applyCurve } from '../printer/profile.js';
 export const DPI = 300;
 export const PREVIEW_HEIGHT = 600;
 
-/** @typedef {{tone?: number, perSheet?: 1|2}} Options tone: 1 normal, < 1 lighter, > 1 darker */
+/**
+ * @typedef {{tone?: number, perSheet?: 1|2, clean?: 'auto'|'on'|'off'}} Options
+ * tone: 1 normal, < 1 lighter, > 1 darker. clean: Magic Scan cleanup (auto = documents only, photos untouched).
+ */
 
 /** One page: lighter/darker, printer tuning, then fit to A4. @param {Gray} g @param {Profile} profile @param {Options} [opts] */
-export function processPage(g, profile, { tone = 1 } = {}) {
+export function processPage(g, profile, { tone = 1, clean = 'auto' } = {}) {
+  g = scan(g, clean);
   const toned = tone === 1 ? g : applyCurve(g, Array.from({ length: 17 }, (_, i) => [i / 16, (i / 16) ** tone]));
   return fitA4(applyCurve(toned, profile.curve), { dpi: DPI });
+}
+
+/**
+ * Magic Scan: a photo gets its page cropped out, then shadows flattened and paper made white.
+ * In auto mode, anything that isn't a document is returned exactly as it came.
+ * @param {Gray} g @param {'auto'|'on'|'off'} mode @returns {Gray}
+ */
+function scan(g, mode) {
+  if (mode === 'off') return g;
+  const page = (g.photo && cropPage(g)) || g;
+  return cleanScan(page, { force: mode === 'on' }) ?? g;
 }
 
 /** Two A4 pages side by side, then turned and shrunk onto one A4 sheet: page 1 on top. @param {Gray} a @param {Gray | null} b */

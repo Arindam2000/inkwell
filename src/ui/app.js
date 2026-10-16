@@ -38,8 +38,8 @@ let copies = 1;
 /** The file on screen, kept so a settings change can prepare it again. @type {Blob | null} */
 let current = null;
 const TONE = 'inkwell-tone';
-/** @type {{tone: number, perSheet: 1|2}} */
-const opts = { tone: 1, perSheet: 1 };
+/** @type {{tone: number, perSheet: 1|2, clean: 'auto'|'on'|'off'}} */
+const opts = { tone: 1, perSheet: 1, clean: 'auto' };
 try { opts.tone = Number(localStorage.getItem(TONE)) || 1; } catch { /* default */ }
 
 /** The pages that will print, in order. */
@@ -227,11 +227,13 @@ export function start() {
   /** Show the chosen button in each group as pressed. */
   const mark = () => {
     document.querySelectorAll('[data-tone]').forEach((b) => b.setAttribute('aria-pressed', String(Number(/** @type {HTMLElement} */ (b).dataset.tone) === opts.tone)));
+    document.querySelectorAll('[data-clean]').forEach((b) => b.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (b).dataset.clean === opts.clean)));
     document.querySelectorAll('[data-per]').forEach((b) => b.setAttribute('aria-pressed', String(Number(/** @type {HTMLElement} */ (b).dataset.per) === opts.perSheet)));
   };
   mark();
-  document.querySelectorAll('[data-tone], [data-per]').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-tone], [data-per], [data-clean]').forEach((b) => b.addEventListener('click', () => {
     const d = /** @type {HTMLElement} */ (b).dataset;
+    if (d.clean) opts.clean = d.clean === 'on' ? 'on' : d.clean === 'off' ? 'off' : 'auto';
     if (d.tone) { opts.tone = Number(d.tone); try { localStorage.setItem(TONE, d.tone); } catch { /* fine */ } }
     if (d.per) opts.perSheet = d.per === '2' ? 2 : 1;
     mark();
