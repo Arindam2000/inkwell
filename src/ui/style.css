@@ -120,3 +120,8 @@ h2 { margin: 0; font-size: 22px; }
 .welcome .julee { max-width: 220px; }
 @media (prefers-reduced-motion: reduce) { .julee, .julee *, .bubble { animation: none !important; } .julee .spark { opacity: 0; } }.julee .tongue-line { stroke: #e0607a; stroke-width: 1.4; stroke-linecap: round; }
 
+.julee .lily .breathe { animation-duration: 2.9s; animation-delay: -1.2s; }
+.julee .lily .head { animation-duration: 4.4s; animation-delay: -2s; }
+.julee .lily .tail { animation-duration: 1.3s; }
+.julee .lily .eyes { animation-delay: -2.7s; }
+

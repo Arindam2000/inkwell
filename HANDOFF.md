@@ -76,3 +76,5 @@
 
 - v0.20.0: Julee redrawn anime-style (fluff() tuft outlines, gradients, glossy eyes, blush, sweater stripes, swinging charm), slow ease-in-out motion (breathe 3.6 s, sway 6 s, tail 2.2 s, ear flick, blink, sparkles). Bubbles: Bengali (20px) + English (15px) underneath. No AI image tool in this setup; for hand-drawn anime art, he'd make a still in an image AI and I'd animate it.
 
+- v0.21.0: Lily (Julee's puppy sister) drawn beside Julee (dog() in julee.js, mirrored, bigger head, no sweater/tongue). Bubbles: Bengali + Bengali in English letters (his choice, not Hindi). HELLO/WAIT phrase lists (5 each) pick at random; loading line changes every 2.4 s.
+

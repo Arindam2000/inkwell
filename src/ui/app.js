@@ -5,7 +5,7 @@ import { run } from '../pipeline/run.js';
 import { batches, bookOrder, packPages, unpackPages } from '../print/book.js';
 import { canPrintDirect, cleanupUpdate, installUpdate, onSharedFile, printDirect, scanWithCamera, sendFiles } from '../print/direct.js';
 import { shrinkToHeight } from '../image/shrink.js';
-import { julee } from './julee.js';
+import { HELLO, WAIT, julee, say } from './julee.js';
 
 /** @typedef {import('../image/types.js').Gray} Gray */
 /** @typedef {import('../pipeline/run.js').Page} Page */
@@ -254,6 +254,9 @@ export async function prepare(file, idCard = false) {
   if (again) $('app').classList.add('busy'); else show('working');
   status.textContent = 'Getting it ready…';
   const started = performance.now();
+  let line = Math.floor(Math.random() * WAIT.length);
+  if (!again) say($('wait-say'), WAIT, line);
+  const chat = again ? 0 : setInterval(() => say($('wait-say'), WAIT, ++line), JULEE_MS); // a new line each page-float
   try {
     // Settings tried before on this file (Darker, then back to Normal) come back instantly.
     const key = JSON.stringify({ ...opts, quality: 0 });
@@ -306,6 +309,7 @@ export async function prepare(file, idCard = false) {
     $('err-hint').textContent = err.hint;
     show('error');
   } finally {
+    clearInterval(chat);
     $('app').classList.remove('busy');
     busy = false;
     if (redo) { redo = false; prepare(/** @type {Blob | Blob[]} */ (current), opts.idCard); }
@@ -347,6 +351,7 @@ function guard(btn, working, action) {
 
 export function start() {
   $('hello-dog').append(julee('hello'));
+  say($('hello-say'), HELLO, Math.floor(Math.random() * HELLO.length));
   $('wait-dog').append(julee('wait'));
   const chrome = /Chrome\/(\d+)/.exec(navigator.userAgent)?.[1] ?? '?';
   $('about').textContent = `Inkwell v${__APP_VERSION__} · Chrome ${chrome}`;
