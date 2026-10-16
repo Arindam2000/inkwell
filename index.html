@@ -27,9 +27,17 @@
     </section>
     <section data-state="ready" hidden>
       <p class="toner" id="toner"></p>
+      <p class="summary" id="summary"></p>
+      <div class="copies">
+        <span>Copies</span>
+        <button id="minus" class="step" aria-label="Fewer copies">−</button>
+        <span id="copies">1</span>
+        <button id="plus" class="step" aria-label="More copies">+</button>
+      </div>
       <button id="print" class="big">Print</button>
       <button id="book" class="big quiet">Print as a book (both sides)</button>
       <p class="hint" id="print-hint">Pick your print app, then set scale to 100% (Actual size).</p>
+      <p class="hint">Tap a page to skip it.</p>
       <div id="previews"></div>
       <button id="again" class="big quiet">Choose another file</button>
     </section>

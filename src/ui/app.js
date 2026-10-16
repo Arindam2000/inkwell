@@ -32,6 +32,21 @@ async function toImageUrl(g) {
 
 /** The latest prepared pages (already compressed), ready for printing. */
 let pages = /** @type {Page[]} */ ([]);
+/** Pages the person tapped to leave out (indexes). */
+const skipped = new Set();
+let copies = 1;
+
+/** The pages that will print, in order. */
+const chosen = () => pages.filter((_, i) => !skipped.has(i));
+
+function refresh() {
+  const n = chosen().length;
+  const plural = (/** @type {number} */ k, /** @type {string} */ w) => `${k} ${w}${k === 1 ? '' : 's'}`;
+  $('copies').textContent = String(copies);
+  $('summary').textContent = `${plural(n, 'page')}${copies > 1 ? ` × ${copies} copies` : ''} · ${plural(n * copies, 'sheet')}`;
+  $('book').hidden = n < 2;
+  /** @type {HTMLButtonElement} */ ($('print')).disabled = n === 0;
+}
 
 const SHARED = 'inkwell-shared';
 const BACK_KEY = import.meta.env.BASE_URL + 'book-back';
@@ -101,18 +116,32 @@ export async function prepare(file) {
   try {
     const res = await run(file, (done) => { $('progress').textContent = `Getting it ready… page ${done}`; });
     pages = res.pages;
-    $('book').hidden = pages.length < 2;
+    skipped.clear();
+    copies = 1;
     $('note').hidden = true;
     const box = $('previews');
     box.querySelectorAll('img').forEach((i) => URL.revokeObjectURL(i.src));
     box.replaceChildren();
     for (const [n, g] of res.previews.entries()) {
+      const btn = document.createElement('button');
+      btn.className = 'page';
+      btn.setAttribute('aria-pressed', 'true');
       const img = document.createElement('img');
       img.className = 'preview';
-      img.alt = `Page ${n + 1} preview`;
+      img.alt = '';
       img.src = await toImageUrl(g);
-      box.append(img);
+      const cap = document.createElement('span');
+      cap.className = 'cap';
+      cap.textContent = `Page ${n + 1} of ${res.previews.length}`;
+      btn.append(img, cap);
+      btn.addEventListener('click', () => {
+        skipped.has(n) ? skipped.delete(n) : skipped.add(n);
+        btn.setAttribute('aria-pressed', String(!skipped.has(n)));
+        refresh();
+      });
+      box.append(btn);
     }
+    refresh();
     $('toner').textContent = `Toner: ${Math.round(res.tonerPct)}%`;
     show('ready');
   } catch (e) {
@@ -134,20 +163,22 @@ export function start() {
   input.addEventListener('change', () => { if (input.files?.[0]) prepare(input.files[0]); });
 
   $('print-hint').hidden = canPrintDirect();
-  $('print').addEventListener('click', () => output(pages, 'inkwell'));
+  $('minus').addEventListener('click', () => { copies = Math.max(1, copies - 1); refresh(); });
+  $('plus').addEventListener('click', () => { copies = Math.min(20, copies + 1); refresh(); });
+  $('print').addEventListener('click', () => output(Array.from({ length: copies }, chosen).flat(), 'inkwell'));
   $('book').addEventListener('click', () => {
-    const n = Math.ceil(pages.length / 2);
+    const n = Math.ceil(chosen().length / 2);
     $('sheets').textContent = `It uses ${n} sheet${n > 1 ? 's' : ''}.`;
     show('book-front');
   });
   $('book-front').addEventListener('click', () => {
-    const { front } = bookOrder(pages.length, bookSettings());
-    output(front.map((i) => pages[i]), 'inkwell-front');
+    const { front } = bookOrder(chosen().length, bookSettings());
+    output(front.map((i) => chosen()[i]), 'inkwell-front');
   });
   $('book-next').addEventListener('click', async () => {
     const { reverse, rotate } = bookSettings();
-    const { back } = bookOrder(pages.length, { reverse });
-    const packed = packPages(back.map((i) => (i === null ? null : { ...pages[i], rotate })));
+    const { back } = bookOrder(chosen().length, { reverse });
+    const packed = packPages(back.map((i) => (i === null ? null : { ...chosen()[i], rotate })));
     await (await caches.open(SHARED)).put(BACK_KEY, new Response(/** @type {BlobPart} */ (packed)));
     show('book-back');
   });

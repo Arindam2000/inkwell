@@ -59,3 +59,20 @@ test('book print: fronts, then backs, survives closing the app, learns the flip'
     { name: 'inkwell-back.pdf', pages: 1, turned: 1 },
   ]);
 });
+
+test('page numbers, tap to skip a page, copies: what you see is what prints', async ({ page }) => {
+  await recordShares(page);
+  await open2(page);
+  await expect(page.getByText('Page 1 of 2')).toBeVisible();
+  await expect(page.locator('#summary')).toHaveText('2 pages · 2 sheets');
+
+  await page.getByRole('button', { name: /Page 2 of 2/ }).click();
+  await expect(page.getByRole('button', { name: /Page 2 of 2/ })).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#summary')).toHaveText('1 page · 1 sheet');
+  await expect(page.getByRole('button', { name: 'Print as a book (both sides)' })).toBeHidden();
+
+  await page.getByRole('button', { name: 'More copies' }).click();
+  await expect(page.locator('#summary')).toHaveText('1 page × 2 copies · 2 sheets');
+  await page.getByRole('button', { name: 'Print', exact: true }).click();
+  await expect.poll(() => shared(page)).toEqual([{ name: 'inkwell.pdf', pages: 2, turned: 0 }]);
+});
