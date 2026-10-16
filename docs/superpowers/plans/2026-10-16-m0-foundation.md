@@ -267,3 +267,12 @@
   3. Wi-Fi off → the app still opens.
 - [ ] **Step 4: Write the after-action review** in `PROGRESS.md` (planned → happened → why different → keep/change).
 - [ ] **Step 5: Commit** `M0 done: v0.1.0`.
+
+---
+
+## Pre-press review notes (2026-10-16, carry into M1)
+
+1. **Text should print as line art, not gray.** Pre-press rule: text and line drawings go out as **1-bit at 600 dpi**, photos as 8-bit gray at 300 dpi. 1-bit text skips the printer's own halftone, so edges are razor-sharp, toner use drops, and files shrink about 8×. M0 ships gray (simple, safe). M1 adds per-region choice: text/line regions → 1-bit 600 dpi (with the 2-dot minimum respected), picture regions → gray.
+2. **The Mi A1 is on Android 9.** Recent Chrome releases dropped Android 9, so it is likely frozen on an older Chrome. Everything in M0 (Workers, CompressionStream, share_target, createImageBitmap orientation) is older than that, but spike 04 must confirm `CompressionStream` and `imageOrientation` on the real phone. Fallback if missing: a small bundled deflate (fflate, MIT, pinned) and manual EXIF parsing.
+3. **Drive PDFs are JPEG pages at ~260 dpi.** Render them at 200 dpi in M0 (enough for A4 fit at 300 dpi output). Don't upsample beyond the source; it costs memory and adds nothing.
+4. **Print route:** a PDF handed to Android printing is the only path proven at 100% (spike 01). Prefer whichever spike-04 button reaches that with the fewest taps.
