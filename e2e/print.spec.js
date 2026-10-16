@@ -80,7 +80,7 @@ test('page numbers, tap to skip a page, copies: what you see is what prints', as
 test('2 pages per sheet and darker: previews redo, sheet count halves, setting remembered', async ({ page }) => {
   await recordShares(page);
   await open2(page);
-  await page.getByRole('button', { name: '2 pages' }).click();
+  await page.getByRole('group', { name: 'Per sheet' }).getByRole('button', { name: '2' }).click();
   await expect(page.locator('img.preview')).toHaveCount(1, { timeout: 15000 });
   await expect(page.getByText('Sheet 1 of 1')).toBeVisible();
   await expect(page.locator('#summary')).toHaveText('1 sheet (2 pages each) · 1 sheet');
@@ -116,4 +116,15 @@ test('tap a page: big preview, skip from there; save as PDF and as image', async
   const jpg = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Save as image' }).click();
   expect((await jpg).suggestedFilename()).toBe('inkwell-1.jpg');
+});
+
+test('more options: booklet makes sides to fold; quality is remembered', async ({ page }) => {
+  await open2(page);
+  await page.getByText('More options').click();
+  await page.getByRole('group', { name: 'Booklet' }).getByRole('button', { name: 'On' }).click();
+  await expect(page.locator('#summary')).toHaveText('booklet: 2 sides · 2 sheets', { timeout: 15000 });
+  await page.getByRole('button', { name: 'Draft' }).click();
+  await open2(page); // app opened again later
+  await page.getByText('More options').click();
+  await expect(page.getByRole('button', { name: 'Draft' })).toHaveAttribute('aria-pressed', 'true');
 });

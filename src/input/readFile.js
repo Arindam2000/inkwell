@@ -77,7 +77,7 @@ export async function* readFile(file, { pdfDpi = 200, maxPixels = 24_000_000 } =
       ctx.fillRect(0, 0, w, h);
       await page.render({ canvas, canvasContext: ctx, viewport }).promise;
       page.cleanup();
-      yield toGray(ctx.getImageData(0, 0, w, h).data, w, h);
+      yield { ...toGray(ctx.getImageData(0, 0, w, h).data, w, h), dpi: pdfDpi }; // dpi: for true-size printing
     }
   } finally {
     await task.destroy();

@@ -1,10 +1,10 @@
 /**
  * IPP: the printer's own language, sent over plain HTTP to port 631.
  * Print-Job = one request with the job settings, followed by the pages.
- * @param {string} host @param {Uint8Array} urf @param {string} name
+ * @param {string} host @param {Uint8Array} urf @param {string} name @param {3|4|5} [quality] 3 draft (less toner), 4 normal, 5 best
  * @returns {Uint8Array}
  */
-export function ippPrintJob(host, urf, name) {
+export function ippPrintJob(host, urf, name, quality = 5) {
   const enc = new TextEncoder();
   /** @type {number[]} */
   const b = [0x02, 0x00, 0x00, 0x02, 0, 0, 0, 1, 0x01]; // IPP 2.0, Print-Job, request 1, operation group
@@ -21,7 +21,7 @@ export function ippPrintJob(host, urf, name) {
   str(0x42, 'job-name', name.slice(0, 60));
   str(0x49, 'document-format', 'image/urf');
   b.push(0x02); // job group
-  attr(0x23, 'print-quality', new Uint8Array([0, 0, 0, 5])); // high
+  attr(0x23, 'print-quality', new Uint8Array([0, 0, 0, quality]));
   str(0x44, 'media', 'iso_a4_210x297mm');
   b.push(0x03); // end of attributes
   const out = new Uint8Array(b.length + urf.length);

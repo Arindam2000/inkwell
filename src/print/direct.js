@@ -89,19 +89,19 @@ async function printerHost() {
  * Pages are unpacked and sent one at a time, so memory stays flat.
  * ponytail: photo pages are ~35 MB raw at 600 dpi; switch to PCLm (flate strips) if big photo jobs feel slow.
  * @param {(Page | null)[]} pages null = blank page @param {number} dpi @param {string} name
- * @param {(done: number) => void} [onProgress]
+ * @param {(done: number) => void} [onProgress] @param {3|4|5} [quality] 3 draft, 4 normal, 5 best
  */
-export async function printDirect(pages, dpi, name, onProgress = () => {}) {
+export async function printDirect(pages, dpi, name, onProgress = () => {}, quality = 5) {
   const host = await printerHost();
   const { id } = await Ipp.begin();
   const send = (/** @type {Uint8Array} */ b) => Ipp.append({ id, data: toB64(b) });
-  const job = ippPrintJob(host, urfHeader(pages.length), name);
+  const job = ippPrintJob(host, urfHeader(pages.length), name, quality);
   await send(job);
   const size = pages.find((p) => p) ?? { width: 2480, height: 3508 };
   for (const [i, p] of pages.entries()) {
     let data = p ? await inflate(p.bytes) : new Uint8Array(size.width * size.height).fill(255);
     if (p?.rotate) data = data.reverse(); // 180° turn = pixels in reverse order
-    await send(urfPage({ width: p?.width ?? size.width, height: p?.height ?? size.height, data }, { srcDpi: dpi }));
+    await send(urfPage({ width: p?.width ?? size.width, height: p?.height ?? size.height, data }, { srcDpi: dpi, quality }));
     onProgress(i + 1);
   }
   let reply;

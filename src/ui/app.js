@@ -41,10 +41,17 @@ const skipped = new Set();
 let copies = 1;
 /** The file(s) on screen, kept so a settings change can prepare them again. @type {Blob | Blob[] | null} */
 let current = null;
-const TONE = 'inkwell-tone';
-/** @type {{tone: number, perSheet: 1|2, clean: 'auto'|'on'|'off', idCard: boolean}} */
-const opts = { tone: 1, perSheet: 1, clean: 'auto', idCard: false };
-try { opts.tone = Number(localStorage.getItem(TONE)) || 1; } catch { /* default */ }
+const PREFS = 'inkwell-prefs';
+/**
+ * Print settings. Darkness, quality and ink saver are remembered; the rest start fresh.
+ * @type {{tone: number, perSheet: 1|2|4, clean: 'auto'|'on'|'off', idCard: boolean, size: 'fit'|'actual',
+ *   quality: 3|4|5, booklet: boolean, inkSaver: boolean}}
+ */
+const opts = { tone: 1, perSheet: 1, clean: 'auto', idCard: false, size: 'fit', quality: 5, booklet: false, inkSaver: false };
+try {
+  const p = JSON.parse(localStorage.getItem(PREFS) || '{}');
+  for (const k of /** @type {const} */ (['tone', 'quality', 'inkSaver'])) if (k in p) /** @type {any} */ (opts)[k] = p[k];
+} catch { /* defaults */ }
 
 /** The pages that will print, in order. */
 const chosen = () => pages.filter((_, i) => !skipped.has(i));
@@ -53,7 +60,7 @@ function refresh() {
   const n = chosen().length;
   const plural = (/** @type {number} */ k, /** @type {string} */ w) => `${k} ${w}${k === 1 ? '' : 's'}`;
   $('copies').textContent = String(copies);
-  const what = opts.perSheet === 2 ? `${plural(n, 'sheet')} (2 pages each)` : plural(n, 'page');
+  const what = opts.booklet ? `booklet: ${plural(n, 'side')}` : opts.perSheet > 1 ? `${plural(n, 'sheet')} (${opts.perSheet} pages each)` : plural(n, 'page');
   $('summary').textContent = `${what}${copies > 1 ? ` × ${copies} copies` : ''} · ${plural(n * copies, 'sheet')}`;
   $('book').hidden = n < 2;
   /** @type {HTMLButtonElement} */ ($('print')).disabled = n === 0;
@@ -101,7 +108,7 @@ async function output(list, name) {
   if (!canPrintDirect()) return handOver(assemblePdf(list, DPI), `${name}.pdf`);
   try {
     note('Sending to the printer…');
-    await printDirect(list, DPI, name, (n) => note(`Sending to the printer… page ${n} of ${list.length}`));
+    await printDirect(list, DPI, name, (n) => note(`Sending to the printer… page ${n} of ${list.length}`), opts.quality);
     note('Printing ✓');
   } catch (e) {
     const err = e instanceof InkwellError ? e : new InkwellError("Couldn't print.", 'Try again.');
@@ -229,7 +236,7 @@ export async function prepare(file, idCard = false) {
     box.querySelectorAll('img').forEach((i) => URL.revokeObjectURL(i.src));
     box.replaceChildren();
     for (const [n, g] of res.previews.entries()) {
-      const label = `${opts.perSheet === 2 ? 'Sheet' : 'Page'} ${n + 1} of ${res.previews.length}`;
+      const label = `${opts.booklet ? 'Side' : opts.perSheet > 1 ? 'Sheet' : 'Page'} ${n + 1} of ${res.previews.length}`;
       const fig = document.createElement('div');
       fig.className = 'page';
       const open = document.createElement('button');
@@ -308,19 +315,17 @@ export function start() {
     }
   });
   /** Show the chosen button in each group as pressed. */
-  const mark = () => {
-    document.querySelectorAll('[data-tone]').forEach((b) => b.setAttribute('aria-pressed', String(Number(/** @type {HTMLElement} */ (b).dataset.tone) === opts.tone)));
-    document.querySelectorAll('[data-clean]').forEach((b) => b.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (b).dataset.clean === opts.clean)));
-    document.querySelectorAll('[data-per]').forEach((b) => b.setAttribute('aria-pressed', String(Number(/** @type {HTMLElement} */ (b).dataset.per) === opts.perSheet)));
-  };
+  const mark = () => document.querySelectorAll('[data-opt]').forEach((b) => {
+    const { opt = '', val = '' } = /** @type {HTMLElement} */ (b).dataset;
+    b.setAttribute('aria-pressed', String(String(/** @type {any} */ (opts)[opt]) === val));
+  });
   mark();
-  document.querySelectorAll('[data-tone], [data-per], [data-clean]').forEach((b) => b.addEventListener('click', () => {
-    const d = /** @type {HTMLElement} */ (b).dataset;
-    if (d.clean) opts.clean = d.clean === 'on' ? 'on' : d.clean === 'off' ? 'off' : 'auto';
-    if (d.tone) { opts.tone = Number(d.tone); try { localStorage.setItem(TONE, d.tone); } catch { /* fine */ } }
-    if (d.per) opts.perSheet = d.per === '2' ? 2 : 1;
+  document.querySelectorAll('[data-opt]').forEach((b) => b.addEventListener('click', () => {
+    const { opt = '', val = '' } = /** @type {HTMLElement} */ (b).dataset;
+    /** @type {any} */ (opts)[opt] = val === 'true' ? true : val === 'false' ? false : /^[\d.]+$/.test(val) ? Number(val) : val;
+    try { localStorage.setItem(PREFS, JSON.stringify({ tone: opts.tone, quality: opts.quality, inkSaver: opts.inkSaver })); } catch { /* fine */ }
     mark();
-    if (current) prepare(current, opts.idCard); // previews always show exactly what will print
+    if (opt !== 'quality' && current) prepare(current, opts.idCard); // previews always show exactly what will print
   }));
   $('minus').addEventListener('click', () => { copies = Math.max(1, copies - 1); refresh(); });
   $('plus').addEventListener('click', () => { copies = Math.min(20, copies + 1); refresh(); });

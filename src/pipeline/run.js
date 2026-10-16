@@ -37,8 +37,8 @@ export async function run(file, onProgress, opts = {}) {
       if (r.preview) previews.push(r.preview);
       onProgress(++read, null);
     }
-    const done = /** @type {{pdf: Uint8Array, pages: Page[], tonerPct: number, preview: Gray | null}} */ (await ask({ type: 'finish' }, []));
-    if (done.preview) previews.push(done.preview);
+    const done = /** @type {{pdf: Uint8Array, pages: Page[], tonerPct: number, previews: Gray[]}} */ (await ask({ type: 'finish' }, []));
+    previews.push(...done.previews);
     return { pdf: done.pdf, pages: done.pages, previews, tonerPct: done.tonerPct };
   } finally {
     worker.terminate();

@@ -52,3 +52,24 @@ test('ID card mode: front + back become one A4 page', async () => {
   expect(res.pages).toHaveLength(1);
   expect(res.previews).toHaveLength(1);
 });
+
+test('booklet order: 8 pages fold into 1-2-3…8 (outside 8|1, inside 2|7, …)', async () => {
+  const { bookletSides } = await import('../../src/pipeline/pipeline.js');
+  expect(bookletSides(8)).toEqual([[7, 0], [1, 6], [5, 2], [3, 4]]);
+  expect(bookletSides(5)).toEqual([[null, 0], [1, null], [null, 2], [3, 4]]);
+});
+
+test('booklet and 4 per sheet make the right number of sheets', async () => {
+  async function* pages(n) { for (let i = 0; i < n; i++) yield flat(i % 2 ? 0 : 255); }
+  const b = await processAll(pages(5), HP_M126NW, () => {}, { booklet: true, clean: 'off' });
+  expect(b.pages).toHaveLength(4); // 2 sheets x 2 sides
+  expect(b.previews).toHaveLength(4);
+  const four = await processAll(pages(5), HP_M126NW, () => {}, { perSheet: 4, clean: 'off' });
+  expect(four.pages).toHaveLength(2);
+}, 60_000);
+
+test('ink saver flips a dark screenshot to light, leaves a normal page alone', async () => {
+  const { flipIfDark } = await import('../../src/pipeline/pipeline.js');
+  expect(flipIfDark(flat(20)).data[0]).toBe(235);
+  expect(flipIfDark(flat(240)).data[0]).toBe(240);
+});

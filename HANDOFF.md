@@ -39,3 +39,8 @@
 - `src/scan/clean.js` (paper map via closing + fill non-paper, levels, despeckle, finger removal; auto = documents only), `src/scan/crop.js` (edge-bounded flood vs Otsu, line-fit corners, warp, A4 snap), `src/layout/idCard.js`.
 - Corner-drag: not built; Google scanner's gallery import already lets you drag corners in the Android app.
 - v0.10.0 APK built. Next: Arindam's real-paper check; then Ink Saver (M2).
+
+## PAUSED 2026-10-16 17:40 IST (mid-task, saved as WIP)
+- v0.11.0 is the last finished version (APK built OK). Everything after is WIP in the latest commit.
+- WIP "more print options": Quality Draft/Normal/Best (IPP print-quality 3/4/5), Size Fit/Actual (PDF dpi), 4 per sheet, Booklet (bookletSides + nUp), Ink saver (flipIfDark), all under a "More options" <details>. Unit tests + type check pass.
+- To finish: e2e/print.spec.js last test — after picking Draft, call `await open2(page)` instead of `page.reload()` (options live on the ready screen). Then run all checks, bump to 0.12.0, deploy, push main for the APK, tell Arindam.

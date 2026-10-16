@@ -27,3 +27,15 @@ test('landscape input is rotated', () => {
   const b = box(fitA4(black(300, 100)));
   expect(b.h).toBeGreaterThan(b.w);
 });
+
+test('actual size: a 100 mm wide page at 200 dpi prints 100 mm wide, no shrinking', () => {
+  const w = Math.round((100 / 25.4) * 200);
+  const b = box(fitA4(black(w, w * 1.2), { actualDpi: 200 }));
+  expect(Math.abs(b.w - Math.round((100 / 25.4) * 300))).toBeLessThanOrEqual(1);
+});
+
+test('actual size: a page bigger than A4 is cut at the edges, not squeezed', () => {
+  const out = fitA4(black(3000, 4000), { actualDpi: 300 });
+  expect([out.width, out.height]).toEqual([2480, 3508]);
+  expect(box(out).w).toBe(2480);
+});

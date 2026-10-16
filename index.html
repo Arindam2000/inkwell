@@ -30,22 +30,17 @@
     <section data-state="ready" hidden>
       <p class="toner" id="toner"></p>
       <p class="summary" id="summary"></p>
-      <div class="choice" role="group" aria-label="Clean-up">
-        <span>Clean-up</span>
-        <button data-clean="auto" aria-pressed="true">Auto</button>
-        <button data-clean="on" aria-pressed="false">On</button>
-        <button data-clean="off" aria-pressed="false">Off</button>
-      </div>
       <div class="choice" role="group" aria-label="Darkness">
         <span>Darkness</span>
-        <button data-tone="0.8" aria-pressed="false">Lighter</button>
-        <button data-tone="1" aria-pressed="true">Normal</button>
-        <button data-tone="1.25" aria-pressed="false">Darker</button>
+        <button data-opt="tone" data-val="0.8" aria-pressed="false">Lighter</button>
+        <button data-opt="tone" data-val="1" aria-pressed="false">Normal</button>
+        <button data-opt="tone" data-val="1.25" aria-pressed="false">Darker</button>
       </div>
-      <div class="choice" role="group" aria-label="Pages per sheet">
+      <div class="choice" role="group" aria-label="Per sheet">
         <span>Per sheet</span>
-        <button data-per="1" aria-pressed="true">1 page</button>
-        <button data-per="2" aria-pressed="false">2 pages</button>
+        <button data-opt="perSheet" data-val="1" aria-pressed="false">1</button>
+        <button data-opt="perSheet" data-val="2" aria-pressed="false">2</button>
+        <button data-opt="perSheet" data-val="4" aria-pressed="false">4</button>
       </div>
       <div class="copies">
         <span>Copies</span>
@@ -59,6 +54,41 @@
         <button id="save-pdf" class="big quiet">Save as PDF</button>
         <button id="save-img" class="big quiet">Save as image</button>
       </div>
+      <details class="more">
+        <summary>More options</summary>
+      <div class="choice" role="group" aria-label="Size">
+        <span>Size</span>
+        <button data-opt="size" data-val="fit" aria-pressed="false">Fit page</button>
+        <button data-opt="size" data-val="actual" aria-pressed="false">Actual size</button>
+      </div>
+      <p class="hint">Actual size keeps forms and rulers true to scale (PDFs).</p>
+      <div class="choice" role="group" aria-label="Quality">
+        <span>Quality</span>
+        <button data-opt="quality" data-val="3" aria-pressed="false">Draft</button>
+        <button data-opt="quality" data-val="4" aria-pressed="false">Normal</button>
+        <button data-opt="quality" data-val="5" aria-pressed="false">Best</button>
+      </div>
+      <p class="hint">Draft uses less toner (Android app).</p>
+      <div class="choice" role="group" aria-label="Ink saver">
+        <span>Ink saver</span>
+        <button data-opt="inkSaver" data-val="false" aria-pressed="false">Off</button>
+        <button data-opt="inkSaver" data-val="true" aria-pressed="false">On</button>
+      </div>
+      <p class="hint">Dark screenshots print light.</p>
+      <div class="choice" role="group" aria-label="Booklet">
+        <span>Booklet</span>
+        <button data-opt="booklet" data-val="false" aria-pressed="false">Off</button>
+        <button data-opt="booklet" data-val="true" aria-pressed="false">On</button>
+      </div>
+      <p class="hint">A little A5 book: print with "Print as a book", then fold in half.</p>
+      <div class="choice" role="group" aria-label="Clean-up">
+        <span>Clean-up</span>
+        <button data-opt="clean" data-val="auto" aria-pressed="false">Auto</button>
+        <button data-opt="clean" data-val="on" aria-pressed="false">On</button>
+        <button data-opt="clean" data-val="off" aria-pressed="false">Off</button>
+      </div>
+      <p class="hint">Auto cleans scanned documents and leaves photos alone.</p>
+      </details>
       <p class="hint" id="print-hint">Pick your print app, then set scale to 100% (Actual size).</p>
       <p class="hint">Tap a page to see it big. Tap ✓ to skip it.</p>
       <div id="previews"></div>

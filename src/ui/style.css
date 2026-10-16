@@ -46,3 +46,8 @@ h2 { margin: 0; font-size: 22px; }
 #viewer-img { flex: 1; min-height: 0; width: 100%; object-fit: contain; background: #fff; border: 1px solid var(--line); }
 .viewer-bar { display: flex; gap: 10px; align-items: center; }
 .viewer-bar .big { flex: 1; }
+.more { border: 2px solid var(--line); border-radius: 14px; padding: 4px 14px; }
+.more[open] { padding-bottom: 14px; }
+.more summary { min-height: 48px; display: flex; align-items: center; font-weight: 600; cursor: pointer; }
+.more .choice { margin-top: 10px; }
+.more .hint { text-align: left; font-size: 14px; margin-top: 2px; }
