@@ -2,7 +2,7 @@ import { InkwellError } from '../errors.js';
 import { assemblePdf } from '../pdf/writePdf.js';
 import { DPI } from '../pipeline/pipeline.js';
 import { run } from '../pipeline/run.js';
-import { bookOrder, packPages, unpackPages } from '../print/book.js';
+import { batches, bookOrder, packPages, unpackPages } from '../print/book.js';
 import { canPrintDirect, printDirect } from '../print/direct.js';
 
 /** @typedef {import('../image/types.js').Gray} Gray */
@@ -49,8 +49,13 @@ function refresh() {
 }
 
 const SHARED = 'inkwell-shared';
-const BACK_KEY = import.meta.env.BASE_URL + 'book-back';
+const BOOK_KEY = import.meta.env.BASE_URL + 'book';
 const SETTINGS = 'inkwell-book';
+const BATCH = 'inkwell-book-batch';
+
+/** The book being printed (its chosen pages) and which batch we're on. Saved, so closing the app loses nothing. */
+let book = /** @type {Page[]} */ ([]);
+let batchNo = 0;
 
 /** How this printer stacks and turns sheets; learned from the "how did it come out" question. */
 function bookSettings() {
@@ -93,14 +98,52 @@ async function output(list, name) {
   }
 }
 
-/** Step 2 waits in storage, so closing the app between passes loses nothing. */
-async function backPages() {
-  const res = await (await caches.open(SHARED)).match(BACK_KEY);
-  return res ? unpackPages(new Uint8Array(await res.arrayBuffer())) : null;
+/** @param {number} b */
+function setBatch(b) {
+  batchNo = b;
+}
+
+/** Reload a book left half-printed when the app closed; returns the screen to reopen. @returns {Promise<false|'book-front'|'book-back'>} */
+async function savedBook() {
+  const res = await (await caches.open(SHARED)).match(BOOK_KEY);
+  if (!res) return false;
+  book = /** @type {Page[]} */ (unpackPages(new Uint8Array(await res.arrayBuffer())));
+  try {
+    const at = JSON.parse(localStorage.getItem(BATCH) || '{}');
+    batchNo = at.b || 0;
+    return at.screen === 'book-back' ? 'book-back' : 'book-front';
+  } catch { batchNo = 0; return 'book-front'; }
 }
 
 async function endBook() {
-  await (await caches.open(SHARED)).delete(BACK_KEY);
+  await (await caches.open(SHARED)).delete(BOOK_KEY);
+  book = [];
+}
+
+/** This batch's pages, and its fronts and backs in printer order. */
+function batchJob() {
+  const [a, b] = batches(book.length)[batchNo];
+  const part = book.slice(a, b);
+  const { reverse, rotate } = bookSettings();
+  const { front, back } = bookOrder(part.length, { reverse });
+  return {
+    a, b, sheets: front.length,
+    front: front.map((i) => part[i]),
+    back: back.map((i) => (i === null ? null : { ...part[i], rotate })),
+  };
+}
+
+/** @param {'book-front'|'book-back'} screen */
+function showBook(screen) {
+  const total = batches(book.length).length;
+  const { a, b, sheets } = batchJob();
+  const label = total > 1 ? `Batch ${batchNo + 1} of ${total} · pages ${a + 1}–${b}` : '';
+  $('bf-batch').textContent = label;
+  $('bb-batch').textContent = label;
+  $('bf-text').textContent = `Print the fronts (pages ${a + 1}, ${a + 3}…). It uses ${sheets} sheet${sheets > 1 ? 's' : ''}.`;
+  $('bb-count').textContent = String(sheets);
+  try { localStorage.setItem(BATCH, JSON.stringify({ b: batchNo, screen })); } catch { /* fine */ }
+  show(screen);
 }
 
 /** @param {string} text */
@@ -166,46 +209,48 @@ export function start() {
   $('minus').addEventListener('click', () => { copies = Math.max(1, copies - 1); refresh(); });
   $('plus').addEventListener('click', () => { copies = Math.min(20, copies + 1); refresh(); });
   $('print').addEventListener('click', () => output(Array.from({ length: copies }, chosen).flat(), 'inkwell'));
-  $('book').addEventListener('click', () => {
-    const n = Math.ceil(chosen().length / 2);
-    $('sheets').textContent = `It uses ${n} sheet${n > 1 ? 's' : ''}.`;
-    show('book-front');
+  $('book').addEventListener('click', async () => {
+    book = chosen();
+    setBatch(0);
+    await (await caches.open(SHARED)).put(BOOK_KEY, new Response(/** @type {BlobPart} */ (packPages(book))));
+    showBook('book-front');
   });
-  $('book-front').addEventListener('click', () => {
-    const { front } = bookOrder(chosen().length, bookSettings());
-    output(front.map((i) => chosen()[i]), 'inkwell-front');
-  });
-  $('book-next').addEventListener('click', async () => {
-    const { reverse, rotate } = bookSettings();
-    const { back } = bookOrder(chosen().length, { reverse });
-    const packed = packPages(back.map((i) => (i === null ? null : { ...chosen()[i], rotate })));
-    await (await caches.open(SHARED)).put(BACK_KEY, new Response(/** @type {BlobPart} */ (packed)));
-    show('book-back');
-  });
-  $('book-back').addEventListener('click', async () => {
-    const back = await backPages();
-    if (back) output(back, 'inkwell-back');
-  });
-  $('book-done').addEventListener('click', async () => { await endBook(); show('book-check'); });
-  const cancel = async () => { await endBook(); show(pages.length ? 'ready' : 'empty'); };
+  $('book-front').addEventListener('click', () => output(batchJob().front, 'inkwell-front'));
+  $('book-next').addEventListener('click', () => showBook('book-back'));
+  $('book-back').addEventListener('click', () => output(batchJob().back, 'inkwell-back'));
+  $('book-done').addEventListener('click', () => show('book-check'));
+  const leave = () => show(pages.length ? 'ready' : 'empty');
+  const cancel = async () => { await endBook(); leave(); };
   $('book-cancel').addEventListener('click', cancel);
   $('book-cancel2').addEventListener('click', cancel);
-  $('fix-ok').addEventListener('click', () => {
-    note('Great. Book printing is set up for this printer.');
-    show(pages.length ? 'ready' : 'empty');
+  $('fix-ok').addEventListener('click', async () => {
+    if (batchNo + 1 < batches(book.length).length) {
+      setBatch(batchNo + 1);
+      note('Next batch. Put fresh paper in the tray.');
+      return showBook('book-front');
+    }
+    await endBook();
+    note('Book done ✓');
+    leave();
   });
-  /** @param {'reverse'|'rotate'} key */
-  const fix = (key) => {
-    const s = bookSettings();
-    s[key] = !s[key];
-    saveBookSettings(s);
-    note('Got it. Your next book print will come out right.');
-    show(pages.length ? 'ready' : 'empty');
+  /** Something went wrong: maybe learn the printer's flip, then reprint only this batch. @param {'reverse'|'rotate'|null} key */
+  const redo = (key) => {
+    if (key) {
+      const s = bookSettings();
+      s[key] = !s[key];
+      saveBookSettings(s);
+    }
+    note(`${key ? 'Got it, fixed for every book from now on. ' : ''}Reprint this batch on fresh paper.`);
+    showBook('book-front');
   };
-  $('fix-turn').addEventListener('click', () => fix('rotate'));
-  $('fix-order').addEventListener('click', () => fix('reverse'));
+  $('fix-turn').addEventListener('click', () => redo('rotate'));
+  $('fix-order').addEventListener('click', () => redo('reverse'));
+  $('fix-mixed').addEventListener('click', () => redo(null));
 
-  openShared().then(async (opened) => { if (!opened && await backPages()) show('book-back'); });
+  openShared().then(async (opened) => {
+    const at = opened ? false : await savedBook();
+    if (at) showBook(at);
+  });
 }
 
 /** A file shared from Drive/WhatsApp arrives via the service worker; open it once, then forget it. */

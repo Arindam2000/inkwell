@@ -48,3 +48,15 @@ export function unpackPages(u) {
     return { width: m.w, height: m.h, bytes, rotate: m.r };
   });
 }
+
+/**
+ * Split a book into batches of `size` pages (5 sheets by default), printed fronts-then-backs one batch
+ * at a time. If the printer pulls two sheets at once, only that batch is lost, and it's easy to check.
+ * Batches are even, so only the last one can need a blank back.
+ * @param {number} n pages @param {number} [size] @returns {[number, number][]} [start, end) page indexes
+ */
+export function batches(n, size = 10) {
+  const out = [];
+  for (let i = 0; i < n; i += size) out.push(/** @type {[number, number]} */ ([i, Math.min(n, i + size)]));
+  return out;
+}

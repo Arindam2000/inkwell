@@ -40,24 +40,24 @@ test('book print: fronts, then backs, survives closing the app, learns the flip'
   await page.getByRole('button', { name: 'Print front pages' }).click();
   await page.getByRole('button', { name: /Done, the sheets are out/ }).click();
   await expect(page.getByText('Step 2 of 2')).toBeVisible();
+  await expect(page.getByText(/you should have 1 printed sheets/)).toBeVisible();
 
   await page.reload(); // app closed mid-job
   await expect(page.getByText('Step 2 of 2')).toBeVisible();
   await page.getByRole('button', { name: 'Print back pages' }).click();
   await page.getByRole('button', { name: /Done, check the pages/ }).click();
   await page.getByRole('button', { name: 'Backs are upside down' }).click();
-  await expect(page.getByText(/next book print/)).toBeVisible();
+  await expect(page.getByText(/fixed for every book/)).toBeVisible();
 
-  await open2(page);
-  await page.getByRole('button', { name: 'Print as a book (both sides)' }).click();
+  // Reprint just this batch, now with the backs turned.
   await page.getByRole('button', { name: 'Print front pages' }).click();
   await page.getByRole('button', { name: /Done, the sheets are out/ }).click();
   await page.getByRole('button', { name: 'Print back pages' }).click();
-  await expect.poll(() => page.evaluate(() => window.__shared.length)).toBe(2); // reload cleared the first recorder
-  expect(await shared(page)).toEqual([
-    { name: 'inkwell-front.pdf', pages: 1, turned: 0 },
-    { name: 'inkwell-back.pdf', pages: 1, turned: 1 },
-  ]);
+  await expect.poll(() => page.evaluate(() => window.__shared.length)).toBe(3); // reload cleared the first recorder
+  expect((await shared(page)).at(-1)).toEqual({ name: 'inkwell-back.pdf', pages: 1, turned: 1 });
+  await page.getByRole('button', { name: /Done, check the pages/ }).click();
+  await page.getByRole('button', { name: 'Perfect' }).click();
+  await expect(page.getByText('Book done ✓')).toBeVisible();
 });
 
 test('page numbers, tap to skip a page, copies: what you see is what prints', async ({ page }) => {

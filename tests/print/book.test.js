@@ -44,3 +44,9 @@ test('back pages survive packing (blank and turned pages too)', async () => {
   const b = { width: 3, height: 2, bytes: new Uint8Array([9, 8]), rotate: false };
   expect(unpackPages(packPages([null, a, b]))).toEqual([null, a, b]);
 });
+
+test('a 21-page book runs in batches of 10, 10, 1 pages', async () => {
+  const { batches } = await import('../../src/print/book.js');
+  expect(batches(21)).toEqual([[0, 10], [10, 20], [20, 21]]);
+  expect(batches(4)).toEqual([[0, 4]]);
+});
