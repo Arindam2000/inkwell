@@ -1,0 +1,73 @@
+{
+  "index.html": {
+    "file": "assets/index-_1leCFp2.js",
+    "name": "index",
+    "src": "index.html",
+    "isEntry": true,
+    "dynamicImports": [
+      "node_modules/pdfjs-dist/legacy/build/pdf.mjs",
+      "node_modules/@capacitor-mlkit/document-scanner/dist/esm/index.js"
+    ],
+    "css": [
+      "assets/index-DbPszVYB.css"
+    ],
+    "assets": [
+      "assets/pdf.worker.min-BmVo14Nb.mjs",
+      "assets/worker-DTnOUISd.js",
+      "assets/julee-BpJflzpo.jpg",
+      "assets/julee-head-eLTB8HMc.webp",
+      "assets/lily-A_6UCrqV.jpg",
+      "assets/lily-head-ZtnOiHeS.webp"
+    ]
+  },
+  "node_modules/@capacitor-mlkit/document-scanner/dist/esm/index.js": {
+    "file": "assets/esm-BuIEPALc.js",
+    "name": "esm",
+    "src": "node_modules/@capacitor-mlkit/document-scanner/dist/esm/index.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "index.html"
+    ],
+    "dynamicImports": [
+      "node_modules/@capacitor-mlkit/document-scanner/dist/esm/web.js"
+    ]
+  },
+  "node_modules/@capacitor-mlkit/document-scanner/dist/esm/web.js": {
+    "file": "assets/web-Cl0R8D9s.js",
+    "name": "web",
+    "src": "node_modules/@capacitor-mlkit/document-scanner/dist/esm/web.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "index.html"
+    ]
+  },
+  "node_modules/pdfjs-dist/legacy/build/pdf.mjs": {
+    "file": "assets/pdf-DxsNl-fv.js",
+    "name": "pdf",
+    "src": "node_modules/pdfjs-dist/legacy/build/pdf.mjs",
+    "isDynamicEntry": true,
+    "imports": [
+      "index.html"
+    ]
+  },
+  "node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs": {
+    "file": "assets/pdf.worker.min-BmVo14Nb.mjs",
+    "src": "node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs"
+  },
+  "src/ui/img/julee-head.webp": {
+    "file": "assets/julee-head-eLTB8HMc.webp",
+    "src": "src/ui/img/julee-head.webp"
+  },
+  "src/ui/img/julee.jpg": {
+    "file": "assets/julee-BpJflzpo.jpg",
+    "src": "src/ui/img/julee.jpg"
+  },
+  "src/ui/img/lily-head.webp": {
+    "file": "assets/lily-head-ZtnOiHeS.webp",
+    "src": "src/ui/img/lily-head.webp"
+  },
+  "src/ui/img/lily.jpg": {
+    "file": "assets/lily-A_6UCrqV.jpg",
+    "src": "src/ui/img/lily.jpg"
+  }
+}

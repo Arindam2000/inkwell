@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; worker-src 'self' blob:; connect-src 'self' https://api.github.com">
+  <meta name="theme-color" content="#fbfaf7">
+  <title>Inkwell</title>
+  <link rel="manifest" href="/inkwell/manifest.webmanifest">
+  <link rel="icon" href="/inkwell/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/inkwell/icons/apple-180.png">
+  <script type="module" crossorigin src="/inkwell/assets/index-_1leCFp2.js"></script>
+  <link rel="stylesheet" crossorigin href="/inkwell/assets/index-DbPszVYB.css">
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Inkwell</h1>
+      <p class="tag">Clean prints. Less toner.</p>
+    </div>
+    <button id="home" class="home" hidden>⌂ Home</button>
+  </header>
+  <main id="app">
+    <p class="note" id="note" hidden></p>
+    <button id="update" class="big" hidden></button>
+    <section data-state="empty">
+      <div class="welcome">
+        <p class="bubble" id="hello-say"><span class="bn" lang="bn">নমস্কার! আজ কী প্রিন্ট করবো?</span><span class="en" lang="bn-Latn">Nomoshkar! Aaj ki print korbo?</span></p>
+        <div id="hello-dog"></div>
+      </div>
+      <button id="scan" class="big" hidden>Scan with camera</button>
+      <button id="choose" class="big">Choose photos or PDFs</button>
+      <button id="idcard" class="big quiet">ID card (front + back)</button>
+      <p class="hint">Or share from Drive → Inkwell</p>
+    </section>
+    <section data-state="working" class="loading" hidden>
+      <p class="bubble" id="wait-say"><span class="bn" lang="bn">একটু অপেক্ষা করুন!</span><span class="en" lang="bn-Latn">Ektu opekkha korun!</span></p>
+      <div id="wait-dog"></div>
+      <p class="status" id="progress">Getting it ready…</p>
+    </section>
+    <section data-state="ready" hidden>
+      <button id="back" class="link">‹ Back</button>
+      <p class="toner" id="toner"></p>
+      <p class="summary" id="summary"></p>
+      <div class="choice" role="group" aria-label="Darkness">
+        <span>Darkness</span>
+        <button data-opt="tone" data-val="0.8" aria-pressed="false">Lighter</button>
+        <button data-opt="tone" data-val="1" aria-pressed="false">Normal</button>
+        <button data-opt="tone" data-val="1.25" aria-pressed="false">Darker</button>
+      </div>
+      <div class="choice" role="group" aria-label="Per sheet">
+        <span>Per sheet</span>
+        <button data-opt="perSheet" data-val="1" aria-pressed="false">1</button>
+        <button data-opt="perSheet" data-val="2" aria-pressed="false">2</button>
+        <button data-opt="perSheet" data-val="4" aria-pressed="false">4</button>
+      </div>
+      <div class="copies">
+        <span>Copies</span>
+        <button id="minus" class="step" aria-label="Fewer copies">−</button>
+        <span id="copies">1</span>
+        <button id="plus" class="step" aria-label="More copies">+</button>
+      </div>
+      <button id="print" class="big">Print</button>
+      <button id="printer-pick" class="link" hidden>Printer: choose ▾</button>
+      <button id="print-settings" class="big quiet" hidden>Turn on Android printing</button>
+      <button id="book" class="big quiet">Print as a book (both sides)</button>
+      <div class="pair">
+        <button id="save-pdf" class="big quiet">Save as PDF</button>
+        <button id="save-img" class="big quiet">Save as image</button>
+      </div>
+      <details class="more">
+        <summary>More options</summary>
+      <div class="choice" role="group" aria-label="Size">
+        <span>Size</span>
+        <button data-opt="size" data-val="fit" aria-pressed="false">Fit page</button>
+        <button data-opt="size" data-val="actual" aria-pressed="false">Actual size</button>
+      </div>
+      <p class="hint">Actual size keeps forms and rulers true to scale (PDFs).</p>
+      <div class="choice" role="group" aria-label="Quality">
+        <span>Quality</span>
+        <button data-opt="quality" data-val="3" aria-pressed="false">Draft</button>
+        <button data-opt="quality" data-val="4" aria-pressed="false">Normal</button>
+        <button data-opt="quality" data-val="5" aria-pressed="false">Best</button>
+      </div>
+      <p class="hint">Draft uses less toner (Android app).</p>
+      <div class="choice" role="group" aria-label="Ink saver">
+        <span>Ink saver</span>
+        <button data-opt="inkSaver" data-val="false" aria-pressed="false">Off</button>
+        <button data-opt="inkSaver" data-val="true" aria-pressed="false">On</button>
+      </div>
+      <p class="hint">Dark screenshots print light.</p>
+      <div class="choice" role="group" aria-label="Booklet">
+        <span>Booklet</span>
+        <button data-opt="booklet" data-val="false" aria-pressed="false">Off</button>
+        <button data-opt="booklet" data-val="true" aria-pressed="false">On</button>
+      </div>
+      <p class="hint">A little A5 book: print with "Print as a book", then fold in half.</p>
+      <div class="choice" role="group" aria-label="Mini book">
+        <span>Mini book</span>
+        <button data-opt="mini" data-val="0" aria-pressed="false">Off</button>
+        <button data-opt="mini" data-val="8" aria-pressed="false">8 pages</button>
+        <button data-opt="mini" data-val="16" aria-pressed="false">16 pages</button>
+      </div>
+      <p class="hint">A pocket book from each sheet: print with "Print as a book", lay page 1 face down with the upright pages toward you, then fold.<br>
+        8 pages: top half down, then left half over to the right.<br>
+        16 pages: turn the sheet sideways first; left over right, top down, left over right.<br>
+        Staple the left fold, trim the other folded edges.</p>
+      <button id="fold-test" class="big quiet">Try a numbered fold test</button>
+      <div class="choice" role="group" aria-label="Clean-up">
+        <span>Clean-up</span>
+        <button data-opt="clean" data-val="auto" aria-pressed="false">Auto</button>
+        <button data-opt="clean" data-val="on" aria-pressed="false">On</button>
+        <button data-opt="clean" data-val="off" aria-pressed="false">Off</button>
+      </div>
+      <p class="hint">Auto cleans scanned documents and leaves photos alone.</p>
+      </details>
+      <p class="hint" id="print-hint">Pick your print app, then set scale to 100% (Actual size).</p>
+      <p class="hint">Tap a page to see it big. Tap ✓ to skip it.</p>
+      <div id="previews"></div>
+      <button id="again" class="big quiet">Choose another file</button>
+    </section>
+    <section data-state="book-front" hidden>
+      <h2>Book print · Step 1 of 2</h2>
+      <p class="batch" id="bf-batch"></p>
+      <p id="bf-text"></p>
+      <p class="hint">Tip: fan the paper and don't overfill the tray, so sheets don't stick together.</p>
+      <button id="book-front" class="big">Print front pages</button>
+      <button id="book-next" class="big quiet">Done, the sheets are out</button>
+      <button id="book-cancel" class="link">Cancel book print</button>
+    </section>
+    <section data-state="book-back" hidden>
+      <h2>Book print · Step 2 of 2</h2>
+      <p class="batch" id="bb-batch"></p>
+      <ol class="steps">
+        <li>Count them: you should have <b id="bb-count"></b> printed sheets. <b>Take out any blank sheet</b> (the printer pulled two at once).</li>
+        <li>Take the stack out <b>as it is</b>. Don't flip it, don't shuffle it.</li>
+        <li>Put it in the tray <b>blank side up</b>, top edge going in first.</li>
+      </ol>
+      <button id="book-back" class="big">Print back pages</button>
+      <button id="book-done" class="big quiet">Done, check the pages</button>
+      <button id="book-cancel2" class="link">Cancel book print</button>
+    </section>
+    <section data-state="book-check" hidden>
+      <h2>How did the backs come out?</h2>
+      <button id="fix-ok" class="big">Perfect</button>
+      <button id="fix-turn" class="big quiet">Backs are upside down</button>
+      <button id="fix-order" class="big quiet">Pages are in the wrong order</button>
+      <button id="fix-mixed" class="big quiet">Sheets got mixed up</button>
+      <p class="hint">Anything but Perfect reprints just this batch on fresh paper.</p>
+    </section>
+    <section data-state="error" hidden>
+      <p class="error" id="err-msg"></p>
+      <p class="hint" id="err-hint"></p>
+      <button id="retry" class="big">Try another file</button>
+    </section>
+  </main>
+  <div id="viewer" class="viewer" hidden>
+    <p class="viewer-cap" id="viewer-cap"></p>
+    <img id="viewer-img" alt="">
+    <div class="viewer-bar">
+      <button id="v-prev" class="step" aria-label="Previous page">‹</button>
+      <button id="v-skip" class="big quiet"></button>
+      <button id="v-next" class="step" aria-label="Next page">›</button>
+    </div>
+    <button id="v-close" class="big">Close</button>
+  </div>
+  <div id="picker" class="viewer picker" hidden>
+    <h2>Which printer?</h2>
+    <p class="hint" id="picker-msg"></p>
+    <div id="picker-list" class="picker-list"></div>
+    <button id="pick-again" class="big quiet">Search again</button>
+    <button id="pick-android" class="big quiet">Print with Android (any printer, this time)</button>
+    <button id="pick-cancel" class="link">Cancel</button>
+  </div>
+  <footer><p id="about"></p></footer>
+  <input id="file" type="file" accept="image/*,application/pdf" multiple hidden>
+  <input id="id-files" type="file" accept="image/*,application/pdf" multiple hidden>
+</body>
+</html>
