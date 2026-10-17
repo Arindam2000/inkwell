@@ -38,9 +38,10 @@ self.onmessage = async (/** @type {MessageEvent} */ e) => {
       self.postMessage({ type: 'page', preview }, { transfer: preview ? [preview.data.buffer] : [] });
     } else if (msg.type === 'finish') {
       const previews = await job.flush();
-      const { pdf, pages, tonerPct } = job.finish();
+      // No PDF here: the app builds one only when it prints or saves (it would double the memory on every setting change).
+      const { pages } = job, tonerPct = job.tonerSum / Math.max(1, pages.length);
       job = new Job(HP_M126NW);
-      self.postMessage({ type: 'pdf', pdf, pages, tonerPct, previews }, { transfer: [pdf.buffer, ...pages.map((p) => p.bytes.buffer), ...previews.map((p) => p.data.buffer)] });
+      self.postMessage({ type: 'pages', pages, tonerPct, previews }, { transfer: [...pages.map((p) => p.bytes.buffer), ...previews.map((p) => p.data.buffer)] });
     }
   } catch (err) {
     self.postMessage({ type: 'error', message: String(err) });

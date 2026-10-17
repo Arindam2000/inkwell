@@ -4,10 +4,11 @@ test('run() turns a 2-page PDF into a 2-page A4 PDF in the background worker', a
   await page.goto('./');
   const r = await page.evaluate(async () => {
     const { run } = await import('/inkwell/src/pipeline/run.js');
+    const { assemblePdf } = await import('/inkwell/src/pdf/writePdf.js');
     const blob = await (await fetch('/inkwell/tests/fixtures/two-page.pdf')).blob();
     const progress = [];
     const res = await run(blob, (done, total) => progress.push([done, total]));
-    const head = new TextDecoder().decode(res.pdf.slice(0, 5));
+    const head = new TextDecoder().decode(assemblePdf(res.pages, 300).slice(0, 5)); // the PDF is built only when printing or saving
     return { head, pages: res.previews.length, h: res.previews[0].height, toner: res.tonerPct, progress };
   });
   expect(r.head).toBe('%PDF-');

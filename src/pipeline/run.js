@@ -19,7 +19,7 @@ let held = { file: /** @type {Blob | Blob[] | null} */ (null), key: '', pages: 0
  * @param {Blob | Blob[]} file one file, or several read one after another (ID card front + back)
  * @param {(done: number, total: number | null) => void} onProgress
  * @param {import('./pipeline.js').Options} [opts] lighter/darker, pages per sheet
- * @returns {Promise<{pdf: Uint8Array, pages: Page[], previews: Gray[], tonerPct: number}>}
+ * @returns {Promise<{pages: Page[], previews: Gray[], tonerPct: number}>}
  */
 export async function run(file, onProgress, opts = {}) {
   const key = opts.idCard ? 'card' : opts.clean ?? 'auto';
@@ -58,10 +58,10 @@ export async function run(file, onProgress, opts = {}) {
         await page({ type: 'page', gray: r.value }, [r.value.data.buffer]);
       }
     }
-    const done = /** @type {{pdf: Uint8Array, pages: Page[], tonerPct: number, previews: Gray[]}} */ (await ask({ type: 'finish' }, []));
+    const done = /** @type {{pages: Page[], tonerPct: number, previews: Gray[]}} */ (await ask({ type: 'finish' }, []));
     previews.push(...done.previews);
     held = { file, key, pages: read };
-    return { pdf: done.pdf, pages: done.pages, previews, tonerPct: done.tonerPct };
+    return { pages: done.pages, previews, tonerPct: done.tonerPct };
   } catch (e) {
     w.terminate(); // a stuck or broken worker starts fresh next time
     worker = null;

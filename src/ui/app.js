@@ -18,6 +18,7 @@ function show(state) {
     /** @type {HTMLElement} */ (s).hidden = /** @type {HTMLElement} */ (s).dataset.state !== state;
   });
   $('home').hidden = state === 'empty';
+  if (state === 'empty') wake();
   // Leaving the start screen adds one history step, so the phone's Back comes home instead of closing the app.
   if (state !== 'empty' && !history.state?.inner) history.pushState({ inner: true }, '');
 }
@@ -341,7 +342,9 @@ export async function prepare(file, idCard = false) {
     if (!res) {
       res = await run(file, (done) => { status.textContent = `Getting it ready… page ${done}`; }, opts);
       results.set(key, res);
-      if (results.size > 6) results.delete(/** @type {string} */ (results.keys().next().value)); // ponytail: oldest out, 6 is plenty for toggling
+      // Oldest out until the remembered results fit in ~60 MB (a 3 GB phone has little to spare).
+      const size = () => [...results.values()].reduce((n, r) => n + r.pages.reduce((m, p) => m + p.bytes.length, 0), 0);
+      while (results.size > 1 && (results.size > 6 || size() > 60e6)) results.delete(/** @type {string} */ (results.keys().next().value));
     }
     // Julee's page always finishes floating up once (the file kept loading underneath), then the pages open.
     if (!again) await new Promise((r) => setTimeout(r, Math.max(0, JULEE_MS - (performance.now() - started))));
@@ -393,6 +396,19 @@ export async function prepare(file, idCard = false) {
   }
 }
 let busy = false, redo = false;
+
+/**
+ * Julee and Lily greet, then rest: after their hello they sit still, so an old phone isn't drawing
+ * 60 frames a second forever (that used three-quarters of the Mi A1's CPU). A tap wakes them.
+ */
+let restTimer = 0;
+function wake() {
+  const pups = /** @type {HTMLElement | null} */ (document.querySelector('#hello-dog .pups'));
+  if (!pups) return;
+  pups.classList.remove('rest');
+  clearTimeout(restTimer);
+  restTimer = setTimeout(() => pups.classList.add('rest'), 12_000);
+}
 /** One float-up of the page in Julee's loading animation (style.css 'upload'). */
 const JULEE_MS = 2400;
 /** Prepared results for the file on screen, by settings. @type {Map<string, Awaited<ReturnType<typeof run>>>} */
@@ -429,6 +445,8 @@ function guard(btn, working, action) {
 
 export function start() {
   $('hello-dog').append(julee('hello'));
+  $('hello-dog').addEventListener('click', wake); // a tap wakes them up again
+  wake();
   say($('hello-say'), HELLO, Math.floor(Math.random() * HELLO.length));
   $('wait-dog').append(julee('wait'));
   const chrome = /Chrome\/(\d+)/.exec(navigator.userAgent)?.[1] ?? '?';

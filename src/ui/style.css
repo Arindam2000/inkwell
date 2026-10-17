@@ -129,3 +129,8 @@ h2 { margin: 0; font-size: 22px; }
 #printer-pick { align-self: center; }
 #update.ready { background: var(--gold); }
 
+/* Resting (after the greeting) and while loading: nothing moves except what must, to keep old phones cool. */
+.pups.rest, .pups.rest * { animation-play-state: paused !important; }
+.pups.rest .petal, .pups.rest .lid { opacity: 0; }
+.pups.wait .petal, .pups.wait .head, .pups.wait .lid { animation: none; }
+.pups.wait .petal, .pups.wait .lid { opacity: 0; }

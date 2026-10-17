@@ -45,3 +45,14 @@ test('footer shows app version and browser version (for support)', async ({ page
   await page.goto('./');
   await expect(page.locator('#about')).toHaveText(/^Inkwell v\d+\.\d+\.\d+ · Chrome \d+$/);
 });
+
+test('Julee and Lily rest after their greeting (old phones stay cool); a tap wakes them', async ({ page }) => {
+  await page.clock.install();
+  await page.goto('./');
+  const pups = page.locator('#hello-dog .pups');
+  await expect(pups).not.toHaveClass(/rest/);
+  await page.clock.runFor(13_000);
+  await expect(pups).toHaveClass(/rest/);
+  await pups.click();
+  await expect(pups).not.toHaveClass(/rest/);
+});
