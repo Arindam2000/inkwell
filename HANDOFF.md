@@ -93,3 +93,7 @@
 
 - v0.29.0: share-in copies the file to cache/in and the page fetches it (Capacitor.convertFileSrc) instead of base64 through the bridge (slow for big PDFs on the Mi A1); a share that can't be read now shows a message instead of silence. Testing share-in over adb: shell can't grant MediaProvider URIs (SecurityException), so use a real share from Files/Drive.
 
+
+## v1.0.0 (2026-10-17)
+- Same as 0.29.0, tagged 1.0. Still unverified on paper by Arindam: mini book fold, A5 booklet backs, Magic Scan real page, 100 mm ruler, share-in from Files/Drive, printer picker with his HP. Fix anything he reports as 1.0.x.
+
