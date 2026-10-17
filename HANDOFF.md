@@ -97,3 +97,5 @@
 ## v1.0.0 (2026-10-17)
 - Same as 0.29.0, tagged 1.0. Still unverified on paper by Arindam: mini book fold, A5 booklet backs, Magic Scan real page, 100 mm ruler, share-in from Files/Drive, printer picker with his HP. Fix anything he reports as 1.0.x.
 
+- v1.1.0: PDF reader warm-up 1.5 s after start (readFile.warmUp) and one shared pdf.js PDFWorker for all documents; src/ui/remember.js keeps the last 8 prepared results in Cache Storage keyed by app version + file fingerprint (size + SHA-1 of first 256 KB / last 64 KB) + settings, so reopening a file skips the worker entirely.
+

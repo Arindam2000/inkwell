@@ -6,6 +6,8 @@ import { batches, bookOrder, packPages, unpackPages } from '../print/book.js';
 import { canPrintDirect, cleanupUpdate, findPrinters, installUpdate, onSharedFile, prefetchUpdate, printDirect, openPrintSettings, printWithAndroid, scanWithCamera, sendFiles } from '../print/direct.js';
 import { shrinkToHeight } from '../image/shrink.js';
 import { HELLO, WAIT, julee, say } from './julee.js';
+import { fileKey, keep, recall } from './remember.js';
+import { warmUp } from '../input/readFile.js';
 
 /** @typedef {import('../image/types.js').Gray} Gray */
 /** @typedef {import('../pipeline/run.js').Page} Page */
@@ -340,7 +342,13 @@ export async function prepare(file, idCard = false) {
     const key = JSON.stringify({ ...opts, quality: 0 });
     let res = results.get(key);
     if (!res) {
-      res = await run(file, (done) => { status.textContent = `Getting it ready… page ${done}`; }, opts);
+      // A file opened before (today or last week) with these settings comes back from the phone's memory.
+      const saved = `${__APP_VERSION__}|${await fileKey(file)}|${key}`;
+      res = (await recall(saved)) ?? undefined;
+      if (!res) {
+        res = await run(file, (done) => { status.textContent = `Getting it ready… page ${done}`; }, opts);
+        keep(saved, res);
+      }
       results.set(key, res);
       // Oldest out until the remembered results fit in ~60 MB (a 3 GB phone has little to spare).
       const size = () => [...results.values()].reduce((n, r) => n + r.pages.reduce((m, p) => m + p.bytes.length, 0), 0);
@@ -467,6 +475,7 @@ export function start() {
   });
   $('fold-test').addEventListener('click', async () => prepare(await numbered(opts.mini || 8)));
   checkUpdate();
+  setTimeout(warmUp, 1500); // the PDF reader loads quietly once the start screen is up
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); }); // back to the app
   setInterval(checkUpdate, 30 * 60_000);
 

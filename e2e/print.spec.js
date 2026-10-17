@@ -300,3 +300,14 @@ test('printer picker: lists the printers found, remembers the choice; one printe
   expect(r).toEqual({ names: ['HP LaserJet', 'Canon Office'], pick: 'Canon Office', saved: '192.168.1.9', auto: 'Only One',
     msg: expect.stringContaining('No printer found'), android: 'android', stillSaved: '10.0.0.2', hidden: true });
 });
+
+test('a PDF opened before comes back from the phone memory (no reading or clean-up), even after restarting', async ({ page }) => {
+  await open2(page);
+  const before = await page.locator('img.preview').first().getAttribute('src');
+  await page.reload(); // app closed and opened again
+  await page.evaluate(() => { window.__workers = 0; const W = window.Worker; window.Worker = class extends W { constructor(...a) { super(...a); if (String(a[0]).includes('pipeline')) window.__workers++; } }; });
+  await page.locator('#file').setInputFiles(fixture('two-page.pdf'));
+  await expect(page.locator('img.preview')).toHaveCount(2, { timeout: 15000 });
+  expect(await page.evaluate(() => window.__workers)).toBe(0); // no preparing worker was started
+  expect(before).toBeTruthy();
+});

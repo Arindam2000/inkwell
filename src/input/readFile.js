@@ -5,14 +5,23 @@ import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 /** @typedef {import('../image/types.js').Gray} Gray */
 
 /**
- * The PDF reader is big (~400 KB), so it loads the first time a PDF is opened, not when the app starts.
+ * The PDF reader is big (~400 KB + a 1.3 MB helper), so it isn't part of the app's start: warmUp() loads it
+ * quietly once the start screen is up, and one helper is kept for every PDF instead of a new one each time.
  * Legacy build: polyfills newer JS (e.g. Uint8Array.toHex) that old Chrome on the Mi A1 lacks.
+ * @type {Promise<{lib: typeof import('pdfjs-dist/legacy/build/pdf.mjs'), worker: any}> | null}
  */
-async function pdfjs() {
-  const lib = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  lib.GlobalWorkerOptions.workerSrc = workerUrl;
-  return lib;
+let reader = null;
+function pdfjs() {
+  reader ??= import('pdfjs-dist/legacy/build/pdf.mjs').then((lib) => {
+    lib.GlobalWorkerOptions.workerSrc = workerUrl;
+    return { lib, worker: new lib.PDFWorker() };
+  });
+  reader.catch(() => { reader = null; }); // a failed load is tried again next time
+  return reader;
 }
+
+/** Load the PDF reader in the background, so the first PDF opens without waiting for it. */
+export const warmUp = () => { pdfjs().catch(() => {}); };
 
 const UNKNOWN = () => new InkwellError("Inkwell can't open this kind of file.", 'Share a photo or a PDF instead.');
 const BAD_PDF = () => new InkwellError('This PDF is locked or damaged.', 'Open it in Drive, then share it again.');
@@ -63,8 +72,8 @@ export async function* readFile(file, { pdfDpi = 200, maxPixels = 24_000_000 } =
   }
   if (k !== 'pdf') throw UNKNOWN();
 
-  const { getDocument } = await pdfjs();
-  const task = getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
+  const { lib, worker } = await pdfjs();
+  const task = lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), worker });
   let doc;
   try {
     doc = await task.promise;
