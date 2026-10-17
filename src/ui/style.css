@@ -66,16 +66,19 @@ h2 { margin: 0; font-size: 22px; }
 .more[open] summary::after { transform: rotate(180deg); }
 
 /* Julee and Lily (src/ui/julee.js): Ghibli watercolours with slow, soft, soothing motion.
-   The paintings have pure-white paper; multiply over the page colour makes it vanish. */
-.pups { position: relative; background: var(--paper); display: flex; align-items: flex-end; justify-content: center; gap: 0; width: 100%; max-width: 340px; margin: 0 auto; padding-top: 6px; }
-.pups .dog { position: relative; mix-blend-mode: multiply; transform-origin: 50% 100%; animation: breathe 3.8s ease-in-out infinite; }
-.pups .dog img { display: block; width: 100%; height: auto; background: #fff; user-select: none; -webkit-user-drag: none; }
+   The paper is baked to the page colour, and only transform/opacity animate (cheap on old phones). */
+.pups { position: relative; display: flex; align-items: flex-end; justify-content: center; gap: 0; width: 100%; max-width: 340px; margin: 0 auto; padding-top: 6px; }
+.pups .dog { position: relative; will-change: transform; transform-origin: 50% 100%; animation: breathe 3.8s ease-in-out infinite; }
+.pups .dog img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
 .pups .julee { width: 54%; }
 .pups .lily { width: 40%; margin-right: -4%; animation-duration: 3.1s; animation-delay: -1.3s; z-index: 1; }
 /* The head: the same painting, softly masked to the head, nodding around the neck. */
-.pups .head { position: absolute; inset: 0; animation: nod 6s ease-in-out infinite; }
-.pups .julee .head { -webkit-mask-image: radial-gradient(ellipse 30% 26% at 66% 27%, #000 72%, transparent 100%); mask-image: radial-gradient(ellipse 30% 26% at 66% 27%, #000 72%, transparent 100%); transform-origin: 66% 47%; }
-.pups .lily .head { -webkit-mask-image: radial-gradient(ellipse 30% 28% at 65% 33%, #000 72%, transparent 100%); mask-image: radial-gradient(ellipse 30% 28% at 65% 33%, #000 72%, transparent 100%); transform-origin: 65% 54%; animation-duration: 4.8s; animation-delay: -2s; }
+.pups .head { position: absolute; inset: 0; will-change: transform; animation: nod 6s ease-in-out infinite; }
+.pups .head img { position: absolute; width: 60%; height: auto; }
+.pups .julee .head img { left: 35.91%; top: 0.9%; }
+.pups .lily .head img { left: 34.88%; top: 5%; }
+.pups .julee .head { transform-origin: 66% 47%; }
+.pups .lily .head { transform-origin: 65% 54%; animation-duration: 4.8s; animation-delay: -2s; }
 /* Blinks: a fur-white lid with a soft dark lash line, for a moment every few seconds. */
 .pups .lid { position: absolute; width: 7%; height: 4.4%; border-radius: 0 0 50% 50%; background: #fdfbf7; border-bottom: 2px solid #3b2b20; opacity: 0; animation: blink 5.5s ease-in-out infinite; }
 .pups .julee .lid.l { left: 55.8%; top: 25.9%; } .pups .julee .lid.r { left: 72%; top: 24.8%; }

@@ -1,11 +1,14 @@
 import juleeArt from './img/julee.jpg';
+import juleeHead from './img/julee-head.webp';
 import lilyArt from './img/lily.jpg';
+import lilyHead from './img/lily-head.webp';
 
 /**
  * Julee and Lily, Arindam's Indian Spitz girls, as Ghibli-style watercolour paintings (made in Google
- * Flow from his photos; paper turned pure white so it melts into the page). style.css gives them
- * slow, soothing life: breathing, a soft head nod, blinks, and petals drifting past.
- * Each dog: the painting, plus a copy of just the head (soft-edged mask) that nods on its own.
+ * Flow from his photos; the paper is baked to the page colour). style.css gives them slow, soothing
+ * life: breathing, a soft head nod, blinks, and petals drifting past.
+ * Each dog: the painting, plus its head cut out with a soft edge (a separate picture) that nods on its own.
+ * Only transforms and opacity move, so a 2017 phone's graphics chip does the work, not its CPU.
  * @param {'wait'|'hello'} mood wait: a page floats up beside them (loading); hello: they hop in to greet.
  * @returns {HTMLElement}
  */
@@ -15,8 +18,8 @@ export function julee(mood) {
   box.setAttribute('role', 'img');
   box.setAttribute('aria-label', 'Julee and Lily, the dogs');
   box.innerHTML = `
-  ${dog('lily', lilyArt)}
-  ${dog('julee', juleeArt)}
+  ${dog('lily', lilyArt, lilyHead)}
+  ${dog('julee', juleeArt, juleeHead)}
   ${mood === 'wait' ? `<svg class="page" viewBox="0 0 48 90" aria-hidden="true">
     <path class="arrow" d="M24 30 v-26 m-9 9 l9 -9 l9 9"/>
     <rect x="5" y="38" width="38" height="48" rx="5"/><path class="lines" d="M12 50 h24 M12 59 h24 M12 68 h16"/>
@@ -25,11 +28,11 @@ export function julee(mood) {
   return box;
 }
 
-/** One painted dog with its own nodding head and blinking eyes. @param {string} who @param {string} art */
-function dog(who, art) {
+/** One painted dog with its own nodding head and blinking eyes. @param {string} who @param {string} art @param {string} head */
+function dog(who, art, head) {
   return `<div class="dog ${who}">
     <img src="${art}" alt="" draggable="false">
-    <div class="head"><img src="${art}" alt="" draggable="false"><span class="lid l"></span><span class="lid r"></span></div>
+    <div class="head"><img src="${head}" alt="" draggable="false"><span class="lid l"></span><span class="lid r"></span></div>
   </div>`;
 }
 /** What the girls say, in Bengali and the same in English letters. A different one each time. */

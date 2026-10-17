@@ -1,12 +1,18 @@
-// Legacy build: polyfills newer JS (e.g. Uint8Array.toHex) that old Chrome on the Mi A1 lacks.
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { InkwellError } from '../errors.js';
 import { toGray } from '../image/gray.js';
 import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 
 /** @typedef {import('../image/types.js').Gray} Gray */
 
-GlobalWorkerOptions.workerSrc = workerUrl;
+/**
+ * The PDF reader is big (~400 KB), so it loads the first time a PDF is opened, not when the app starts.
+ * Legacy build: polyfills newer JS (e.g. Uint8Array.toHex) that old Chrome on the Mi A1 lacks.
+ */
+async function pdfjs() {
+  const lib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  lib.GlobalWorkerOptions.workerSrc = workerUrl;
+  return lib;
+}
 
 const UNKNOWN = () => new InkwellError("Inkwell can't open this kind of file.", 'Share a photo or a PDF instead.');
 const BAD_PDF = () => new InkwellError('This PDF is locked or damaged.', 'Open it in Drive, then share it again.');
@@ -57,6 +63,7 @@ export async function* readFile(file, { pdfDpi = 200, maxPixels = 24_000_000 } =
   }
   if (k !== 'pdf') throw UNKNOWN();
 
+  const { getDocument } = await pdfjs();
   const task = getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
   let doc;
   try {
