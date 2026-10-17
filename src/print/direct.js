@@ -85,6 +85,9 @@ export async function findPrinters() {
  */
 export const printWithAndroid = (pdf, name) => Ipp.systemPrint({ name, data: toB64(pdf) });
 
+/** Android's Printing settings, where its print services (Default Print Service, Mopria…) are switched on. */
+export const openPrintSettings = () => Ipp.openPrintSettings();
+
 /**
  * Print pages straight to the printer: 600 dpi, high quality, true size, no print screen.
  * Pages are unpacked and sent one at a time, so memory stays flat.

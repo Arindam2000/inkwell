@@ -3,7 +3,9 @@ package io.github.arindam2000.inkwell;
 import android.content.Context;
 import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
+import android.content.Intent;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.os.CancellationSignal;
 import android.os.ParcelFileDescriptor;
 import android.print.PageRange;
@@ -169,5 +171,12 @@ public class IppPlugin extends Plugin {
             }, new PrintAttributes.Builder().setMediaSize(PrintAttributes.MediaSize.ISO_A4).build());
             call.resolve();
         });
+    }
+
+    /** Open Android's Printing settings (some phones ship with the Default Print Service switched off). */
+    @PluginMethod
+    public void openPrintSettings(PluginCall call) {
+        getActivity().startActivity(new Intent(Settings.ACTION_PRINT_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        call.resolve();
     }
 }

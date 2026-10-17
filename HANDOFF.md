@@ -87,3 +87,5 @@
 
 - v0.24.1 was a no-change test release. v0.25.0: update check on start + whenever the app comes back to the screen + every 30 min (1-min throttle). New version is prefetched in the background (UpdatePlugin.prefetch; synchronized ensure() so a tap during prefetch waits instead of downloading twice); button stages Connecting… / Getting v… N% / Update ready · tap to install; tap during download = install when ready.
 
+- v0.26.0: 'Print with Android' is one-time (never remembered; an old remembered 'android' is ignored). Realme/Oppo ship with Android printing off -> 'Print service not enabled'; new 'Turn on Android printing' button opens Settings.ACTION_PRINT_SETTINGS (IppPlugin.openPrintSettings).
+

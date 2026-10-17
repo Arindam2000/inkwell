@@ -294,8 +294,9 @@ test('printer picker: lists the printers found, remembers the choice; one printe
     const msg = document.getElementById('picker-msg').textContent;
     document.getElementById('pick-android').click();
     const android = await none;
-    return { names, pick: pick.name, saved: saved.host, auto: auto.name, msg, android: android.host, hidden: document.getElementById('picker').hidden };
+    const stillSaved = JSON.parse(localStorage.getItem('inkwell-printer')).host; // Android's screen is one-time, never the default
+    return { names, pick: pick.name, saved: saved.host, auto: auto.name, msg, android: android.host, stillSaved, hidden: document.getElementById('picker').hidden };
   });
   expect(r).toEqual({ names: ['HP LaserJet', 'Canon Office'], pick: 'Canon Office', saved: '192.168.1.9', auto: 'Only One',
-    msg: expect.stringContaining('No printer found'), android: 'android', hidden: true });
+    msg: expect.stringContaining('No printer found'), android: 'android', stillSaved: '10.0.0.2', hidden: true });
 });

@@ -3,7 +3,7 @@ import { assemblePdf } from '../pdf/writePdf.js';
 import { DPI } from '../pipeline/pipeline.js';
 import { run } from '../pipeline/run.js';
 import { batches, bookOrder, packPages, unpackPages } from '../print/book.js';
-import { canPrintDirect, cleanupUpdate, findPrinters, installUpdate, onSharedFile, prefetchUpdate, printDirect, printWithAndroid, scanWithCamera, sendFiles } from '../print/direct.js';
+import { canPrintDirect, cleanupUpdate, findPrinters, installUpdate, onSharedFile, prefetchUpdate, printDirect, openPrintSettings, printWithAndroid, scanWithCamera, sendFiles } from '../print/direct.js';
 import { shrinkToHeight } from '../image/shrink.js';
 import { HELLO, WAIT, julee, say } from './julee.js';
 
@@ -117,7 +117,12 @@ async function output(list, name) {
   if (!canPrintDirect()) return handOver(assemblePdf(list, DPI), `${name}.pdf`);
   const printer = savedPrinter() ?? (await pickPrinter(true));
   if (!printer) return;
-  if (printer.host === ANDROID.host) return printWithAndroid(assemblePdf(list, DPI), name);
+  if (printer.host === ANDROID.host) {
+    // Some phones (Realme, Oppo) ship with Android's printing switched off: then Android says "Print service not enabled".
+    $('print-settings').hidden = false;
+    note('Android print screen opened. If it says "Print service not enabled", tap "Turn on Android printing" below.');
+    return printWithAndroid(assemblePdf(list, DPI), name);
+  }
   try {
     note(`Sending to ${printer.name}…`);
     await printDirect(list, DPI, name, printer.host, (n) => note(`Sending to ${printer.name}… page ${n} of ${list.length}`), opts.quality);
@@ -137,7 +142,8 @@ const ANDROID = { name: 'Android print screen', host: 'android' };
 function savedPrinter() {
   try {
     const v = localStorage.getItem(PRINTER);
-    return !v ? null : v.startsWith('{') ? JSON.parse(v) : { name: v, host: v };
+    const p = !v ? null : v.startsWith('{') ? JSON.parse(v) : { name: v, host: v };
+    return p?.host === ANDROID.host ? null : p; // v0.24/0.25 remembered the Android screen; it's a one-time choice now
   } catch { return null; }
 }
 /** @param {Printer} p */
@@ -163,7 +169,7 @@ export function pickPrinter(auto, find = findPrinters) {
     answer = (p) => {
       $('picker').hidden = true;
       answer = null;
-      if (p) rememberPrinter(p);
+      if (p && p.host !== ANDROID.host) rememberPrinter(p); // only real printers are remembered
       resolve(p);
     };
     search(auto, find);
@@ -453,6 +459,7 @@ export function start() {
   $('pick-again').addEventListener('click', () => search(false));
   $('pick-android').addEventListener('click', () => answer?.(ANDROID));
   $('pick-cancel').addEventListener('click', () => answer?.(null));
+  $('print-settings').addEventListener('click', () => openPrintSettings());
   guard($('save-pdf'), 'Saving…', (b) => save('pdf', b));
   guard($('save-img'), 'Saving…', (b) => save('jpg', b));
   $('v-close').addEventListener('click', () => { $('viewer').hidden = true; });
