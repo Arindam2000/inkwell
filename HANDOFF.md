@@ -91,3 +91,5 @@
 
 - v0.27.0/0.28.0 speed (measured on mom's Mi A1 over USB, adb from winget Google.PlatformTools): start 3.0 s -> ~0.8 s (pdfjs lazy-loaded; start bundle 511 -> 36 KB); dogs: page colour baked into jpgs, heads are separate soft-edged webp layers (no mix-blend/mask), animations pause 12 s after greeting (tap wakes), loading screen has no petals/nod; release build (assembleRelease, versionCode from package.json); worker no longer builds an unused PDF per run; settings-results cache capped at ~60 MB.
 
+- v0.29.0: share-in copies the file to cache/in and the page fetches it (Capacitor.convertFileSrc) instead of base64 through the bridge (slow for big PDFs on the Mi A1); a share that can't be read now shows a message instead of silence. Testing share-in over adb: shell can't grant MediaProvider URIs (SecurityException), so use a real share from Files/Drive.
+

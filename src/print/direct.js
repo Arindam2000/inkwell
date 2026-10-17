@@ -45,14 +45,21 @@ export async function sendFiles(files) {
 
 /**
  * Hand each file shared to the Android app to `open`: the one it was opened with, and any shared while it runs.
- * @param {(file: Blob) => unknown} open @returns {Promise<boolean>} true if it was opened with a file
+ * @param {(file: Blob) => unknown} open @param {(err: InkwellError) => void} [onError] a share that can't be read
+ * @returns {Promise<boolean>} true if it was opened with a file
  */
-export async function onSharedFile(open) {
+export async function onSharedFile(open, onError = () => {}) {
   const take = async () => {
-    const f = await Shared.take();
-    if (!f.data) return false;
-    open(new Blob([Uint8Array.from(atob(f.data), (c) => c.charCodeAt(0))], { type: f.type || '' }));
-    return true;
+    try {
+      const f = await Shared.take();
+      if (!f.uri) return false;
+      const blob = await (await fetch(Capacitor.convertFileSrc(f.uri))).blob();
+      open(new Blob([blob], { type: f.type || blob.type }));
+      return true;
+    } catch {
+      onError(new InkwellError("Couldn't open the shared file.", 'Try "Choose photos or PDFs" instead.'));
+      return false;
+    }
   };
   Shared.addListener('shared', take);
   return take();

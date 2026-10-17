@@ -566,7 +566,7 @@ export function start() {
   $('fix-order').addEventListener('click', () => redo('reverse'));
   $('fix-mixed').addEventListener('click', () => redo(null));
 
-  (canPrintDirect() ? onSharedFile(prepare) : openShared()).then(async (opened) => {
+  (canPrintDirect() ? onSharedFile(prepare, (err) => note(`${err.message} ${err.hint}`)) : openShared()).then(async (opened) => {
     const at = opened ? false : await savedBook();
     if (at) showBook(at);
   });

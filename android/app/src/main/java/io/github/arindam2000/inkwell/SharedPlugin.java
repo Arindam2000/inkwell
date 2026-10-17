@@ -34,13 +34,21 @@ public class SharedPlugin extends Plugin {
         Uri uri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
         intent.setAction(Intent.ACTION_MAIN); // take it only once
         if (uri == null) { call.resolve(ret); return; }
-        try (InputStream in = getContext().getContentResolver().openInputStream(uri)) {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
+        // Copied to the app's cache and handed over as a file the page fetches: no base64 round trip,
+        // which took seconds for a big PDF on an old phone.
+        File dir = new File(getContext().getCacheDir(), "in");
+        //noinspection ResultOfMethodCallIgnored
+        dir.mkdirs();
+        File[] old = dir.listFiles();
+        if (old != null) for (File f : old) //noinspection ResultOfMethodCallIgnored
+            f.delete();
+        File file = new File(dir, name(uri).replaceAll("[^A-Za-z0-9._-]", "_"));
+        try (InputStream in = getContext().getContentResolver().openInputStream(uri); FileOutputStream out = new FileOutputStream(file)) {
             byte[] buf = new byte[65536];
             for (int n; (n = in.read(buf)) > 0; ) out.write(buf, 0, n);
             ret.put("name", name(uri));
             ret.put("type", getContext().getContentResolver().getType(uri));
-            ret.put("data", Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP));
+            ret.put("uri", Uri.fromFile(file).toString());
             call.resolve(ret);
         } catch (Exception e) {
             call.reject("Can't open the shared file");
